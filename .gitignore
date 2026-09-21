@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# foundry
+cache/
+broadcast/*/*/dry-run/
+
+# environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+mnemonic.txt
+
+# ML models — large, fetched not committed
+*.onnx
+models/
+
+# test fixtures output
+fixtures/generated/
+coverage/
+
+# os / editor
+.DS_Store
+.vscode/
+.idea/
+
+# internal planning — kept local, never published
+# competitor survey, bounty strategy, judge notes, cut list
+RESEARCH_NOTES.md
+BUILD_PLAN.md

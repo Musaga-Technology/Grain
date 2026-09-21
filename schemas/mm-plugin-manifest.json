@@ -1,0 +1,38 @@
+{
+  "_comment": "The 'mm' block for plugins/mm-grain/package.json. Plugins are NOT skills: skills teach an agent which mm commands to run, plugins add new commands to mm itself. Start from MetaMask/agent-wallet-plugin-template. Users consent to these capabilities at install time.",
+  "name": "mm-grain",
+  "description": "Verify and licence image provenance from the Grain registry on Monad.",
+  "mm": {
+    "schemaVersion": 1,
+    "minCliVersion": "^6.2.0",
+    "_comment_capabilities": "Keep the plugin-wide list EMPTY - it merges into every command. Declare per-command instead, so 'grain verify' asks for nothing.",
+    "capabilities": [],
+    "commands": [
+      {
+        "id": "grain:verify",
+        "_comment": "requiresAuth = false in the command class. Works before sign-in - good demo beat.",
+        "capabilities": [],
+        "dataAccess": []
+      },
+      {
+        "id": "grain:license",
+        "_comment": "The only command that moves money. Runs simulation -> Blockaid threat scanning -> policy. Monad mainnet 143 is Transaction Shield 'Covered', so scanning actually applies.",
+        "capabilities": ["wallet-read"],
+        "dataAccess": ["balances"]
+      },
+      {
+        "id": "grain:register",
+        "capabilities": ["wallet-read"],
+        "dataAccess": ["balances"]
+      }
+    ]
+  },
+  "_local_testing": [
+    "npm run build",
+    "mm config set experimentalPlugins true",
+    "mm config set experimentalAllowUnverifiedInstalls true",
+    "mm plugins install \"file:$PWD\" --accept-permissions",
+    "mm grain verify ./fixtures/screenshot.png"
+  ],
+  "_note": "The plugin system is still experimental. Document both config flags in the plugin README - judges who try it will hit them otherwise."
+}

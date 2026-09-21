@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://grain.xyz/schemas/resolution-result.schema.json",
+  "title": "Grain Resolution Result",
+  "description": "Returned by POST /v1/resolve. Four states, each with its own UI treatment (SPEC.md 8.3). NOTE: no confidence percentage field exists anywhere in this schema, deliberately - '87% match' invites an argument you cannot win in a live demo.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["state", "record", "manifest", "via", "distance"],
+      "properties": {
+        "state": { "const": "RESOLVED" },
+        "record": { "$ref": "#/$defs/record" },
+        "manifest": { "type": "object" },
+        "via": { "enum": ["watermark", "fingerprint", "both"], "description": "Show this in the UI. The honest mix is more convincing than a claimed 100%." },
+        "distance": { "type": "integer", "minimum": 0, "maximum": 64 }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["state", "candidates", "distance"],
+      "properties": {
+        "state": { "const": "UNCERTAIN", "description": "distance between MATCH_THRESHOLD and TAMPER_THRESHOLD" },
+        "candidates": { "type": "array", "items": { "$ref": "#/$defs/record" } },
+        "distance": { "type": "integer" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["state", "claimed", "distance"],
+      "properties": {
+        "state": { "const": "TAMPERED", "description": "Watermark resolved but the fingerprint does not match what the creator registered - the watermark was transferred onto a different image. This is the best 30 seconds of the demo." },
+        "claimed": { "$ref": "#/$defs/record" },
+        "distance": { "type": "integer" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": { "const": "NOT_FOUND", "description": "Must NOT be styled as an error. Most images on earth are unregistered; that is the starting condition, not a bug." }
+      }
+    }
+  ],
+  "$defs": {
+    "record": {
+      "type": "object",
+      "required": ["recordId", "creator", "fingerprint", "registeredAt"],
+      "properties": {
+        "recordId": { "type": "string" },
+        "creator": { "type": "string" },
+        "creatorHandle": { "type": "string" },
+        "fingerprint": { "type": "string" },
+        "registeredAt": { "type": "integer" },
+        "blockNumber": { "type": "integer" },
+        "supersededBy": { "type": ["string", "null"] },
+        "revoked": { "type": "boolean" }
+      }
+    }
+  }
+}
