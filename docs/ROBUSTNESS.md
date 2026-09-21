@@ -9,11 +9,52 @@ these measurements. Do not guess them.
 | Item | Value |
 |---|---|
 | TrustMark variant | Q (default, PSNR 43-45 dB) |
-| TrustMark encoding | _BCH_5 / BCH_SUPER — record which_ |
-| **Usable payload bits** | _MEASURE THIS FIRST — it sets MAX_RECORD_ID_ |
-| `WM_STRENGTH` | _highest value with no visible ripple, by eye_ |
-| Browser / ONNX runtime version | |
-| Test image set | 20 images: 5 photo, 5 illustration, 5 AI-generated, 5 screenshot-of-text |
+| TrustMark encoding | **BCH_SUPER** — see below |
+| **Usable payload bits** | **40** → `MAX_RECORD_ID = 2^40 - 1 = 1,099,511,627,775` |
+| `WM_STRENGTH` | _highest value with no visible ripple, by eye — NOT YET MEASURED_ |
+| Encode implementation | TrustMark Rust crate 0.2.2 (`ort` ONNX runtime) |
+| Decode implementation | TrustMark JS/ONNX |
+| Browser / ONNX runtime version | _pending_ |
+| Test image set | 20 images: 5 photo, 5 illustration, 5 AI-generated, 5 screenshot-of-text — _not yet supplied_ |
+
+### Payload width — measured, not quoted
+
+Read from the Rust implementation's `src/bits.rs` rather than from documentation.
+Total payload is 100 bits, of which 4 encode the version:
+
+| Version | Data bits | ECC bits | Correctable bit flips |
+|---|---|---|---|
+| **BCH_SUPER** | **40** | 56 | **8** |
+| BCH_5 | 61 | 35 | 5 |
+| BCH_4 | 68 | 28 | 4 |
+| BCH_3 | 75 | 21 | 3 |
+
+**BCH_SUPER is chosen.** A recordId needs nowhere near 40 bits at any plausible
+scale — 2^40 is 1.1 trillion — so capacity is not the scarce resource and
+robustness is. BCH_SUPER corrects 8 bit flips against BCH_5's 5.
+
+Consequence for the registry: `recordId` is a `uint64` on chain, but only the
+low 40 bits fit in a watermark. Registration must refuse to issue a watermark
+above `MAX_RECORD_ID`; such a record still resolves by fingerprint, but silently
+shipping an unwatermarkable id would break the watermark path with no error.
+
+### Implementation split — correction to SPEC.md §5.2
+
+SPEC §5.2 declares `embed()` and `decode()` as though both run in the browser,
+and §8.4 step 5 says the watermark is embedded in-browser. **That is not
+possible.** The official TrustMark JavaScript build is **decode-only**
+(adobe/trustmark README, `/js`). Encoding requires the Rust crate.
+
+- **decode** → JS/ONNX, in the browser. This is the verify path, and decode is
+  exactly what that build supports.
+- **encode** → Rust crate, server-side. Registration therefore cannot be purely
+  client-side.
+
+Watermark **removal** is not implemented in Rust either. Act 3 of the demo
+re-embeds a recordId into a different image rather than lifting a mark off a
+registered one — which is the more honest attack regardless, since TrustMark
+payloads are unauthenticated and anyone can forge one. That is precisely what
+the fingerprint cross-check exists to catch.
 
 > TrustMark docs note that even 40 bits gives a key space of around a trillion, so
 > capacity is not the constraint — but the exact width decides the recordId type.

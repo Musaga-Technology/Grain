@@ -8,3 +8,13 @@ export {
   type RGBAImage,
 } from './fingerprint.ts';
 export { DCT_BASIS, DCT_K, DCT_N } from './dct-basis.ts';
+export {
+  TRUSTMARK_VERSIONS,
+  TRUSTMARK_VERSION,
+  TRUSTMARK_VARIANT,
+  TRUSTMARK_ALG_ID,
+  MAX_RECORD_ID,
+  MAX_ASPECT_RATIO,
+  isWatermarkable,
+  aspectRatioWarning,
+} from './watermark.ts';
