@@ -18,3 +18,4 @@ export {
   isWatermarkable,
   aspectRatioWarning,
 } from './watermark.ts';
+export { decodePNG } from './png.ts';

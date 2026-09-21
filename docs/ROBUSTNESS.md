@@ -38,6 +38,46 @@ low 40 bits fit in a watermark. Registration must refuse to issue a watermark
 above `MAX_RECORD_ID`; such a record still resolves by fingerprint, but silently
 shipping an unwatermarkable id would break the watermark path with no error.
 
+### Round-trip validated — 21 Sep
+
+TrustMark Rust crate 0.2.2, release build, Intel Mac (macOS 13.7, x86_64).
+`cargo build --release` takes ~10 minutes cold.
+
+| Measurement | Value |
+|---|---|
+| Encode, 512×512 PNG | ~1.8 s |
+| Decode, 512×512 PNG | ~1.0 s |
+| CLI default BCH version | `BchSuper` — matches our choice |
+
+`MAX_RECORD_ID` confirmed empirically, not just read from source. recordIds
+`1`, `12345`, `2^40 - 2` and `2^40 - 1` all encode and decode back exactly.
+
+### Watermarking shifts the fingerprint by 2 bits
+
+Measured on `ghost.png` (512×512), three different payloads:
+
+| recordId | Hamming distance, original → watermarked |
+|---|---|
+| 1 | 2 |
+| 12345 | 2 |
+| 1,099,511,627,775 | 2 |
+
+Identical across payloads, so the shift comes from the residual itself rather
+than from what is encoded — expected for spread-spectrum embedding.
+
+**This settles the registration ordering question.** Two bits of a seven-bit
+budget is 29%, consumed before any real-world transformation. Registering the
+*original* image's fingerprint and then distributing the *watermarked* file
+would give every legitimate asset a permanent handicap, and the anti-spoof
+cross-check in SPEC §2 compares against the watermark-bearing asset — so the
+registered fingerprint must be the watermarked one.
+
+Consequence: the watermark must be embedded before the fingerprint is computed,
+which means the recordId must be known before registration. Hence
+`register(expectedRecordId, fingerprint, manifest)`, reverting on mismatch.
+
+**n = 1 image.** The distribution across the 20-image set is still needed.
+
 ### Model sizes — measured
 
 Fetched from `https://cai-watermark.adobe.net/watermarking/trustmark-models`,
