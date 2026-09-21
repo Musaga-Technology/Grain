@@ -38,6 +38,27 @@ low 40 bits fit in a watermark. Registration must refuse to issue a watermark
 above `MAX_RECORD_ID`; such a record still resolves by fingerprint, but silently
 shipping an unwatermarkable id would break the watermark path with no error.
 
+### Model sizes — measured
+
+Fetched from `https://cai-watermark.adobe.net/watermarking/trustmark-models`,
+byte-verified against `Content-Length`.
+
+| Model | Bytes | Size |
+|---|---|---|
+| `decoder_Q.onnx` | 47,401,222 | 45.2 MB |
+| `encoder_Q.onnx` | 17,312,208 | 16.5 MB |
+| `decoder_C.onnx` (compact variant) | 22,457,887 | 21.4 MB |
+
+**This does not affect the browser.** SPEC §7 already routes the web app's
+verification through `POST /v1/resolve`, so both models load once server-side
+and the browser ships no ONNX at all. The fingerprint runs client-side and needs
+no model — it is arithmetic over a committed DCT table.
+
+Variant C's decoder is less than half the size of Q's, which would matter only
+if watermark decoding ever had to move into the browser. It would be a
+pipeline-wide change: images encoded with one variant cannot be decoded with
+another, and Q was chosen for robustness.
+
 ### Implementation split — correction to SPEC.md §5.2
 
 SPEC §5.2 declares `embed()` and `decode()` as though both run in the browser,
