@@ -39,3 +39,11 @@ coverage/
 # competitor survey, bounty strategy, judge notes, cut list
 RESEARCH_NOTES.md
 BUILD_PLAN.md
+
+# TrustMark binary and ONNX models -- ~95 MB, rebuilt by scripts/setup-trustmark.sh
+.tools/
+
+# Screenshot fixtures are NOT published: they contain other projects of the
+# author's (stellarinsure, Spectra, conduit-protocol) and machine hostname.
+# They stay local so the robustness matrix still runs over all 16 fixtures.
+fixtures/sources/screenshot-*.png

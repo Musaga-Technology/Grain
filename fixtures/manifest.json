@@ -1,0 +1,168 @@
+[
+  {
+    "fixture": "screenshot-01.png",
+    "category": "screenshot",
+    "source": "Screenshot 2026-03-28 at 5.24.02 PM.png",
+    "originalDimensions": "2880x1800",
+    "dimensions": "1600x1000",
+    "aspectRatio": 1.6,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xe1e01fc21fc7c618"
+  },
+  {
+    "fixture": "screenshot-02.png",
+    "category": "screenshot",
+    "source": "Screenshot 2026-04-08 at 10.42.55 AM.png",
+    "originalDimensions": "2732x1326",
+    "dimensions": "1600x777",
+    "aspectRatio": 2.06,
+    "exceedsTrustmarkRatio": true,
+    "fingerprint": "0xd18e361f99811e78"
+  },
+  {
+    "fixture": "screenshot-03.png",
+    "category": "screenshot",
+    "source": "Screenshot 2026-04-08 at 10.43.26 AM.png",
+    "originalDimensions": "2760x1700",
+    "dimensions": "1600x986",
+    "aspectRatio": 1.62,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x31b0b6b74d88cccc"
+  },
+  {
+    "fixture": "screenshot-04.png",
+    "category": "screenshot",
+    "source": "Screenshot 2026-04-15 at 10.21.04 AM.png",
+    "originalDimensions": "1108x1262",
+    "dimensions": "1108x1262",
+    "aspectRatio": 1.14,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x00fee3a0abcec1e2"
+  },
+  {
+    "fixture": "screenshot-05.png",
+    "category": "screenshot",
+    "source": "Screenshot 2026-05-19 at 12.12.09 PM.png",
+    "originalDimensions": "1354x802",
+    "dimensions": "1354x802",
+    "aspectRatio": 1.69,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x81767f9919291536"
+  },
+  {
+    "fixture": "photo-01.png",
+    "category": "photo",
+    "source": "alina-chernovolova-Udv2Ne5uozY-unsplash.jpg",
+    "originalDimensions": "4160x5200",
+    "dimensions": "1280x1600",
+    "aspectRatio": 1.25,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xcb3299ca67a56a24"
+  },
+  {
+    "fixture": "photo-02.png",
+    "category": "photo",
+    "source": "quan-jing-jVfjevEX_eU-unsplash.jpg",
+    "originalDimensions": "6564x4346",
+    "dimensions": "1600x1059",
+    "aspectRatio": 1.51,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x8936526c494db7b2"
+  },
+  {
+    "fixture": "photo-03.png",
+    "category": "photo",
+    "source": "queensland-australia-DWbIFuTx5xU-unsplash.jpg",
+    "originalDimensions": "5760x8640",
+    "dimensions": "1067x1600",
+    "aspectRatio": 1.5,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xfc1022518df897ea"
+  },
+  {
+    "fixture": "photo-04.png",
+    "category": "photo",
+    "source": "robert-heiser-4bT8pczLFfw-unsplash.jpg",
+    "originalDimensions": "2672x4752",
+    "dimensions": "900x1600",
+    "aspectRatio": 1.78,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x02fe7c518b2e7590"
+  },
+  {
+    "fixture": "photo-05.png",
+    "category": "photo",
+    "source": "sandisk-xuEbHsRy-Vk-unsplash.jpg",
+    "originalDimensions": "3000x2001",
+    "dimensions": "1600x1067",
+    "aspectRatio": 1.5,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x380da5367278c9f8"
+  },
+  {
+    "fixture": "illustration-01.png",
+    "category": "illustration",
+    "source": "undraw_blocked_ldel.svg",
+    "rasterisedFrom": "svg via qlmanage, padding cropped",
+    "originalDimensions": "3200x2144",
+    "dimensions": "1600x1072",
+    "aspectRatio": 1.49,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x7cc65fc139292b0c"
+  },
+  {
+    "fixture": "illustration-02.png",
+    "category": "illustration",
+    "source": "undraw_creative-drawing_8mni.svg",
+    "rasterisedFrom": "svg via qlmanage, padding cropped",
+    "originalDimensions": "3200x2065",
+    "dimensions": "1600x1033",
+    "aspectRatio": 1.55,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xa0b55b4aaaa4d556"
+  },
+  {
+    "fixture": "illustration-03.png",
+    "category": "illustration",
+    "source": "undraw_digital-invoice_nx9a.svg",
+    "rasterisedFrom": "svg via qlmanage, padding cropped",
+    "originalDimensions": "3200x3095",
+    "dimensions": "1600x1548",
+    "aspectRatio": 1.03,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xc024de33da6e493a"
+  },
+  {
+    "fixture": "illustration-04.png",
+    "category": "illustration",
+    "source": "undraw_lollipop-chart_15kz.svg",
+    "rasterisedFrom": "svg via qlmanage, padding cropped",
+    "originalDimensions": "3200x1771",
+    "dimensions": "1600x886",
+    "aspectRatio": 1.81,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xab883de6a538839a"
+  },
+  {
+    "fixture": "illustration-05.png",
+    "category": "illustration",
+    "source": "undraw_saving-money_wzaa.svg",
+    "rasterisedFrom": "svg via qlmanage, padding cropped",
+    "originalDimensions": "3126x3159",
+    "dimensions": "1583x1600",
+    "aspectRatio": 1.01,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x6848ebaf3131ab8c"
+  },
+  {
+    "fixture": "illustration-06.png",
+    "category": "illustration",
+    "source": "undraw_the-data_hbaz.svg",
+    "rasterisedFrom": "svg via qlmanage, padding cropped",
+    "originalDimensions": "3200x3186",
+    "dimensions": "1600x1593",
+    "aspectRatio": 1,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xad574be55202157a"
+  }
+]
