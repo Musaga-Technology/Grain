@@ -1,0 +1,17 @@
+{
+  "name": "@grain/resolver",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node --experimental-strip-types src/server.ts",
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@grain/core": "workspace:^",
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.9",
+    "viem": "^2.56.8"
+  }
+}
