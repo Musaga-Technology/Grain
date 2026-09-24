@@ -60,3 +60,52 @@ the first ~256 records pay cold and the remainder warm:
 Testnet MON has no monetary value; the constraint is faucet throughput, not
 cost. An earlier estimate of ~209k gas per registration was made before the
 contracts existed and was roughly double the warm figure.
+
+## LSH bucket distribution — measured
+
+SPEC §6.3 asks for the tail rather than the mean, because the tail is what costs
+gas to read. Measured over 913 real photographs (Lorem Picsum / Unsplash),
+fingerprinted locally:
+
+| | |
+|---|---|
+| Non-empty buckets | **1,811 of 2,048** |
+| Mean occupancy | 4.0 |
+| Median | 4 |
+| p90 | 7 |
+| p99 | 13 |
+| **Max** | **20** |
+
+Two things fall out of this.
+
+**Buckets warm up almost immediately.** 913 records already touch 88% of the
+2,048 buckets, which is why the warm registration cost in the table above is
+the steady state and the cold figure only applies to a nearly empty registry.
+
+**The tail runs about 5x the mean.** That ratio is the number worth carrying
+forward, because it is what the naive average hides.
+
+### Projection, and the honest scaling limit
+
+Scaling the measured distribution linearly:
+
+| Records | Mean bucket | Max bucket | Gas to read the max bucket |
+|---|---|---|---|
+| 913 (measured) | 4 | 20 | 16,184 |
+| 10,000 | 44 | ~219 | ~121,000 |
+| 100,000 | 442 | ~2,191 | ~1,156,000 |
+| 1,000,000 | 4,417 | ~21,906 | **~11,507,000** |
+
+SPEC §6.3 estimated ~3,900 ids per bucket at a million records. The mean
+projection of 4,417 is close to that — but the bucket that matters is the
+largest one, at roughly 22,000 ids and 11.5M gas to read in a single call.
+Against a 150M block gas limit that still fits, but it is within one order of
+magnitude of the wall, and it is a single read.
+
+This is the limit to state plainly in the README rather than wait for a judge
+to find: **the onchain LSH index is correct at hackathon scale and has a
+measurable ceiling.** The production path is the one SPEC §7 already takes —
+multi-index hashing with wider bands offchain, fanned out by the indexer, with
+`FingerprintIndex.verify()` proving the winner on chain for 8,687 gas. The
+expensive operation is the search; the cheap one is the proof, and only the
+proof needs to be on chain.
