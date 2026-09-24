@@ -2,6 +2,12 @@
   "name": "grain",
   "private": true,
   "packageManager": "pnpm@10.0.0",
-  "engines": { "node": ">=22.18.0" },
-  "license": "MIT"
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "viem": "^2.56.8"
+  },
+  "type": "module"
 }

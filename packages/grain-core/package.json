@@ -12,6 +12,7 @@
     "gen:dct": "node --experimental-strip-types scripts/gen-dct-basis.ts"
   },
   "dependencies": {
-    "jpeg-js": "^0.4.4"
+    "jpeg-js": "^0.4.4",
+    "viem": "^2.56.8"
   }
 }
