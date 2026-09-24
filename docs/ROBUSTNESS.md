@@ -125,31 +125,85 @@ the fingerprint cross-check exists to catch.
 
 ## Results
 
-Recovery rate = fraction of the 20 images where the watermark decoded correctly.
-Distance = median Hamming distance between the original and transformed fingerprint.
+Measured 24 Sep 2026 over **21 fixtures** (10 photo, 6 illustration, 5 screenshot)
+by `scripts/robustness-matrix.ts`. Reproduce with:
 
-| Transformation | WM recovery | FP distance | Resolves? | Notes |
-|---|---|---|---|---|
-| None (control) | | 0 | | |
-| Screenshot (OS tool) | | | | |
-| JPEG Q40 | | | | |
-| JPEG Q20 | | | | |
-| Downscale 50% | | | | |
-| Downscale 25% | | | | |
-| Crop 10% | | | | |
-| Crop 25% | | | | |
-| Instagram-style filter | | | | |
-| Gaussian blur | | | | |
-| Real platform round-trip | | | | name the platform |
-| Screenshot + JPEG Q40 | | | | worst realistic case |
+```
+node --experimental-strip-types scripts/robustness-matrix.ts
+```
+
+The reference fingerprint is taken from the **watermarked** file, not the
+original, because that is what the anti-spoof check compares against (SPEC §2).
+
+"Resolves" is the better of the two paths — which is the whole point of having
+two.
+
+| Transformation | WM recovery | FP dist (median / max) | FP within 7 | Resolves | Note |
+|---|---|---|---|---|---|
+| none (control) | 100% | 0 / 0 | 100% | **100%** |  |
+| screenshot | 100% | 0 / 0 | 100% | **100%** |  |
+| JPEG Q40 | 76% | 0 / 2 | 100% | **100%** | fingerprint carries it |
+| JPEG Q20 | 43% | 0 / 4 | 100% | **100%** | fingerprint carries it |
+| downscale 50% | 100% | 0 / 2 | 100% | **100%** |  |
+| downscale 25% | 100% | 0 / 2 | 100% | **100%** |  |
+| crop 10% | 100% | 12 / 28 | 19% | **100%** | watermark carries it; fingerprint does not |
+| crop 25% | 19% | 24 / 34 | 0% | **19%** | **both paths fail** |
+| social filter | 43% | 2 / 8 | 95% | **95%** | fingerprint carries it |
+| gaussian blur s=1.5 | 100% | 0 / 2 | 100% | **100%** |  |
+| screenshot+JPEG Q40 | 71% | 0 / 2 | 100% | **100%** |  |
+
+Real platform round-trip is not automated and still needs a manual pass.
+
+### What this says
+
+**The two paths are genuinely complementary, and the data shows it.** JPEG Q20
+drops watermark recovery to 43% while the fingerprint is untouched at distance
+0. Cropping inverts it: at 10% the watermark survives every time and the
+fingerprint moves a median of 12. Neither path is a fallback for the other;
+they fail in different directions, which is exactly the argument in SPEC §2.
+
+**Crop 25% defeats both.** 19% resolve. The watermark is centre-cropped away
+and the fingerprint lands at median 24 — inside the range where unrelated
+images sit (minimum 18 across 210 pairs). This is not a threshold that can be
+tuned around; at that distance the image genuinely is a different image as far
+as a 64-bit global DCT hash is concerned. `docs/DEMO.md` had a crop-25% beat
+and it has been corrected.
+
+**TrustMark is more robust to scaling than the literature suggested.** 100%
+recovery at both 50% and 25% downscale, against the ~82% an independent
+evaluation reported. Blur at sigma 1.5 also recovered 100%.
+
+**Embedding barely moves the fingerprint.** Median 0, maximum 4 of the 7-bit
+budget. An earlier single-image measurement suggested 2 bits was typical; over
+21 fixtures the median is 0.
 
 ## Thresholds derived from the above
 
 | Constant | Value | Justification |
 |---|---|---|
-| `MATCH_THRESHOLD` | _default 7_ | Must stay <= 7 or the 8x8 LSH band geometry no longer guarantees recall |
-| `TAMPER_THRESHOLD` | _default 12_ | Above this with a valid watermark = transferred mark |
-| `MAX_RECORD_ID` | | from measured payload width |
+| `MATCH_THRESHOLD` | **7** | Unchanged. Cannot go higher — the 8x8 band geometry only guarantees recall to 7. |
+| `TAMPER_THRESHOLD` | **16** (was 12) | See below. |
+| `MAX_RECORD_ID` | **2^40 - 1** | BCH_SUPER payload width. |
+
+### TAMPER_THRESHOLD raised from 12 to 16
+
+At 12, **7 of 21 legitimate 10% crops would be reported as TAMPERED** — a third
+of people who crop their own photograph told they are passing off someone
+else's credentials. The alarm state firing on innocent content is a worse
+failure than missing an attack, and in a live demo it is fatal.
+
+Separation measured over 210 unrelated fixture pairs: minimum 18, 1st
+percentile 22, median 32.
+
+| T | Crops falsely flagged | Genuine transfers missed |
+|---|---|---|
+| 12 | 7 / 21 | 0 / 210 |
+| **16** | **2 / 21** | **0 / 210** |
+| 20 | 1 / 21 | 2 / 210 |
+| 28 | 0 / 21 | 63 / 210 |
+
+16 is where false accusations nearly vanish and no genuine transfer escapes.
+Re-derive if the fingerprint changes.
 
 ## Aspect-ratio caveat
 

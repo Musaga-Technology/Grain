@@ -36,15 +36,34 @@ demos that opened with a connect-wallet modal.
 
 Do all of this live, on camera, to the registered image. Never cut.
 
-| # | Attack | Expected |
-|---|---|---|
-| 1 | Screenshot it | resolves |
-| 2 | Crop 25% | resolves |
-| 3 | Crush to JPEG Q40 | resolves |
-| 4 | Run a filter over it | resolves |
-| 5 | Push through a real platform and download it back | resolves |
+**This sequence is measured, not hoped for.** Every row below comes from
+`docs/ROBUSTNESS.md`, run over 21 fixtures on 24 Sep.
+
+| # | Attack | Measured | Which path wins |
+|---|---|---|---|
+| 1 | Screenshot it | 100% | both — distance 0 |
+| 2 | Crop 10% | 100% | **watermark** — fingerprint moves a median of 12 |
+| 3 | Crush to JPEG Q20 | 100% | **fingerprint** — watermark only survives 43% |
+| 4 | Downscale to 25% | 100% | both |
+| 5 | Run a filter over it | 95% | fingerprint |
 
 Drop each mangled copy into Verify. Each returns **Made by {name}**.
+
+Rows 2 and 3 are the sequence's whole argument and should be narrated
+explicitly: the crop is the case where *only* the watermark survives, and the
+JPEG crush is the case where *only* the fingerprint does. That is what "two
+co-equal paths" means, demonstrated rather than asserted.
+
+### Do not demo a 25% crop
+
+It fails — 19% resolve. The watermark is centre-cropped away and the
+fingerprint lands at median distance 24, which is inside the range where
+genuinely unrelated images sit. No threshold fixes it; at that distance the
+image really is a different image to a 64-bit global hash.
+
+The original script had this beat and it would have failed live. If a judge
+asks where the system breaks, answer with this: it is a better answer than a
+claimed 100%, and the full matrix including the failures is in the README.
 
 **Show which path won each time** — "that one was the watermark, this one the
 watermark was gone and it matched on content alone." The honest mix is more

@@ -139,3 +139,58 @@ export function trimUniformBorder(img: RGBAImage, tolerance = 2): RGBAImage {
   if (width <= 1 || height <= 1) return img;
   return crop(img, left, top, width, height);
 }
+
+/** Separable Gaussian blur. Integer radius, weights normalised per pass. */
+export function gaussianBlur(img: RGBAImage, sigma: number): RGBAImage {
+  const radius = Math.max(1, Math.ceil(sigma * 3));
+  const kernel: number[] = [];
+  let sum = 0;
+  for (let i = -radius; i <= radius; i++) {
+    const w = Math.exp(-(i * i) / (2 * sigma * sigma));
+    kernel.push(w);
+    sum += w;
+  }
+  for (let i = 0; i < kernel.length; i++) kernel[i] /= sum;
+
+  const { width, height } = img;
+  const pass = (src: Uint8ClampedArray, horizontal: boolean) => {
+    const dst = new Uint8ClampedArray(src.length);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let r = 0, g = 0, b = 0;
+        for (let k = -radius; k <= radius; k++) {
+          const sx = horizontal ? Math.min(width - 1, Math.max(0, x + k)) : x;
+          const sy = horizontal ? y : Math.min(height - 1, Math.max(0, y + k));
+          const p = (sy * width + sx) * 4;
+          const w = kernel[k + radius];
+          r += src[p] * w; g += src[p + 1] * w; b += src[p + 2] * w;
+        }
+        const q = (y * width + x) * 4;
+        dst[q] = r; dst[q + 1] = g; dst[q + 2] = b; dst[q + 3] = src[q + 3];
+      }
+    }
+    return dst;
+  };
+
+  return { data: pass(pass(img.data as Uint8ClampedArray, true), false), width, height };
+}
+
+/**
+ * A social-filter style adjustment: saturation, contrast and a warm shift.
+ * Stands in for the "Instagram-style filter" row of the robustness matrix.
+ */
+export function socialFilter(img: RGBAImage, saturation = 1.35, contrast = 1.2, warmth = 12): RGBAImage {
+  const out = new Uint8ClampedArray(img.data.length);
+  for (let i = 0; i < img.data.length; i += 4) {
+    let r = img.data[i], g = img.data[i + 1], b = img.data[i + 2];
+    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    r = luma + (r - luma) * saturation;
+    g = luma + (g - luma) * saturation;
+    b = luma + (b - luma) * saturation;
+    r = (r - 128) * contrast + 128 + warmth;
+    g = (g - 128) * contrast + 128;
+    b = (b - 128) * contrast + 128 - warmth;
+    out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = img.data[i + 3];
+  }
+  return { data: out, width: img.width, height: img.height };
+}

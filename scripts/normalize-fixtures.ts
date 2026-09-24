@@ -31,7 +31,16 @@ function categorise(name: string): string {
   const n = name.toLowerCase();
   if (n.endsWith('.svg') || n.startsWith('undraw')) return 'illustration';
   if (n.startsWith('screenshot')) return 'screenshot';
-  if (n.includes('unsplash')) return 'photo';
+  if (n.includes('unsplash') || n.startsWith('pexels')) return 'photo';
+  // Genuinely synthesised images go in an `ai-` prefixed file. The category is
+  // separate from `photo` because of statistics, not subject matter: model
+  // output has no sensor noise, smoother gradients and less high-frequency
+  // energy, and both measurements here depend on that. TrustMark's residual
+  // interacts with texture, and a flat DCT spectrum makes pHash bits less
+  // stable around the median. A photograph of a robot behaves like a
+  // photograph.
+  if (n.startsWith('ai-') || n.includes('midjourney') || n.includes('dalle')
+      || n.includes('stablediffusion')) return 'ai-generated';
   return 'other';
 }
 

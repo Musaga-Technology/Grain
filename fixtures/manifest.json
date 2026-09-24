@@ -62,6 +62,56 @@
   {
     "fixture": "photo-02.png",
     "category": "photo",
+    "source": "pexels-kindelmedia-8566449.jpg",
+    "originalDimensions": "5057x3793",
+    "dimensions": "1600x1200",
+    "aspectRatio": 1.33,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x465b1a4e4e1a69bc"
+  },
+  {
+    "fixture": "photo-03.png",
+    "category": "photo",
+    "source": "pexels-kindelmedia-8566521.jpg",
+    "originalDimensions": "3888x5184",
+    "dimensions": "1200x1600",
+    "aspectRatio": 1.33,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x26ecc51cb0439eda"
+  },
+  {
+    "fixture": "photo-04.png",
+    "category": "photo",
+    "source": "pexels-magda-ehlers-pexels-35280311.jpg",
+    "originalDimensions": "7966x5313",
+    "dimensions": "1600x1067",
+    "aspectRatio": 1.5,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x8007de77387a7078"
+  },
+  {
+    "fixture": "photo-05.png",
+    "category": "photo",
+    "source": "pexels-pavel-danilyuk-8438973.jpg",
+    "originalDimensions": "3466x5192",
+    "dimensions": "1068x1600",
+    "aspectRatio": 1.5,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0x97a0bfdd434a023c"
+  },
+  {
+    "fixture": "photo-06.png",
+    "category": "photo",
+    "source": "pexels-tara-winstead-8386437.jpg",
+    "originalDimensions": "2919x4379",
+    "dimensions": "1067x1600",
+    "aspectRatio": 1.5,
+    "exceedsTrustmarkRatio": false,
+    "fingerprint": "0xb03eb39f206398b2"
+  },
+  {
+    "fixture": "photo-07.png",
+    "category": "photo",
     "source": "quan-jing-jVfjevEX_eU-unsplash.jpg",
     "originalDimensions": "6564x4346",
     "dimensions": "1600x1059",
@@ -70,7 +120,7 @@
     "fingerprint": "0x8936526c494db7b2"
   },
   {
-    "fixture": "photo-03.png",
+    "fixture": "photo-08.png",
     "category": "photo",
     "source": "queensland-australia-DWbIFuTx5xU-unsplash.jpg",
     "originalDimensions": "5760x8640",
@@ -80,7 +130,7 @@
     "fingerprint": "0xfc1022518df897ea"
   },
   {
-    "fixture": "photo-04.png",
+    "fixture": "photo-09.png",
     "category": "photo",
     "source": "robert-heiser-4bT8pczLFfw-unsplash.jpg",
     "originalDimensions": "2672x4752",
@@ -90,7 +140,7 @@
     "fingerprint": "0x02fe7c518b2e7590"
   },
   {
-    "fixture": "photo-05.png",
+    "fixture": "photo-10.png",
     "category": "photo",
     "source": "sandisk-xuEbHsRy-Vk-unsplash.jpg",
     "originalDimensions": "3000x2001",

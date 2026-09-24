@@ -28,10 +28,39 @@ export interface RGBAImage {
 
 export const FINGERPRINT_BITS = 64;
 
-/** Hamming distance at or below this is a match. Confirmed in Milestone 0. */
+/**
+ * Hamming distance at or below this is a match.
+ *
+ * Cannot exceed 7: the 8x8 LSH band geometry only guarantees recall to
+ * distance 7 (SPEC.md 6.3), so a higher threshold would claim matches the
+ * index cannot reliably find.
+ */
 export const MATCH_THRESHOLD = 7;
-/** Watermark resolves but fingerprint exceeds this -> TAMPERED. */
-export const TAMPER_THRESHOLD = 12;
+
+/**
+ * Watermark resolves but fingerprint exceeds this -> TAMPERED.
+ *
+ * RAISED FROM THE SPEC'S 12 TO 16, from Milestone 0 measurement.
+ *
+ * A 10% crop leaves the watermark intact (100% recovery across 21 fixtures)
+ * while moving the fingerprint a median of 12 and as far as 28. At a threshold
+ * of 12, seven of those 21 legitimate crops would be reported as TAMPERED --
+ * a third of people who crop their own photograph told they are passing off
+ * someone else's credentials. That is the alarm state firing on innocent
+ * content, which is worse than missing an attack.
+ *
+ * Measured separation, 210 unrelated fixture pairs: minimum distance 18,
+ * 1st percentile 22, median 32. Against crop-10% distances:
+ *
+ *   T=12  ->  7/21 crops falsely flagged,   0/210 transfers missed
+ *   T=16  ->  2/21 crops falsely flagged,   0/210 transfers missed
+ *   T=20  ->  1/21 crops falsely flagged,   2/210 transfers missed
+ *   T=28  ->  0/21 crops falsely flagged,  63/210 transfers missed
+ *
+ * 16 is the point where false accusations are nearly gone and no genuine
+ * transfer escapes. Re-derive this if the fingerprint changes.
+ */
+export const TAMPER_THRESHOLD = 16;
 
 /**
  * BT.601 luma, rounded half-up, per SPEC.md 5.1 step 2.

@@ -19,6 +19,6 @@ export {
   aspectRatioWarning,
 } from './watermark.ts';
 export { decodePNG } from './png.ts';
-export { decodeImage, sniffFormat, DEFAULT_MAX_DECODE_MB, type ImageFormat, type DecodeOptions } from './decode.ts';
+export { decodeImage, sniffFormat, encodeJPEG, DEFAULT_MAX_DECODE_MB, type ImageFormat, type DecodeOptions } from './decode.ts';
 export { encodePNG } from './png-encode.ts';
-export { resize, scale, fitWithin, crop, cropFraction, flattenOnWhite, contentBounds, trimUniformBorder } from './transforms.ts';
+export { resize, scale, fitWithin, crop, cropFraction, flattenOnWhite, contentBounds, trimUniformBorder, gaussianBlur, socialFilter } from './transforms.ts';

@@ -57,3 +57,9 @@ export function decodeImage(buf: Uint8Array, opts: DecodeOptions = {}): RGBAImag
   }
   throw new Error('unsupported image format: expected PNG or JPEG');
 }
+
+/** Re-encode as JPEG at a given quality, for the robustness matrix. */
+export function encodeJPEG(img: RGBAImage, quality: number): Uint8Array {
+  const out = jpeg.encode({ data: img.data as unknown as Buffer, width: img.width, height: img.height }, quality);
+  return new Uint8Array(out.data);
+}

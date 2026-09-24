@@ -1,0 +1,1633 @@
+{
+  "generatedAt": "2026-09-24T01:40:38.723Z",
+  "matchThreshold": 7,
+  "embedShift": {
+    "median": 0,
+    "max": 4
+  },
+  "summary": [
+    {
+      "transform": "none (control)",
+      "watermarkRecovery": 1,
+      "medianDistance": 0,
+      "maxDistance": 0,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "screenshot",
+      "watermarkRecovery": 1,
+      "medianDistance": 0,
+      "maxDistance": 0,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "JPEG Q40",
+      "watermarkRecovery": 0.7619047619047619,
+      "medianDistance": 0,
+      "maxDistance": 2,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "JPEG Q20",
+      "watermarkRecovery": 0.42857142857142855,
+      "medianDistance": 0,
+      "maxDistance": 4,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "downscale 50%",
+      "watermarkRecovery": 1,
+      "medianDistance": 0,
+      "maxDistance": 2,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "downscale 25%",
+      "watermarkRecovery": 1,
+      "medianDistance": 0,
+      "maxDistance": 2,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "crop 10%",
+      "watermarkRecovery": 1,
+      "medianDistance": 12,
+      "maxDistance": 28,
+      "fingerprintWithinThreshold": 0.19047619047619047,
+      "resolves": 1
+    },
+    {
+      "transform": "crop 25%",
+      "watermarkRecovery": 0.19047619047619047,
+      "medianDistance": 24,
+      "maxDistance": 34,
+      "fingerprintWithinThreshold": 0,
+      "resolves": 0.19047619047619047
+    },
+    {
+      "transform": "social filter",
+      "watermarkRecovery": 0.42857142857142855,
+      "medianDistance": 2,
+      "maxDistance": 8,
+      "fingerprintWithinThreshold": 0.9523809523809523,
+      "resolves": 0.9523809523809523
+    },
+    {
+      "transform": "gaussian blur s=1.5",
+      "watermarkRecovery": 1,
+      "medianDistance": 0,
+      "maxDistance": 2,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    },
+    {
+      "transform": "screenshot+JPEG Q40",
+      "watermarkRecovery": 0.7142857142857143,
+      "medianDistance": 0,
+      "maxDistance": 2,
+      "fingerprintWithinThreshold": 1,
+      "resolves": 1
+    }
+  ],
+  "perFixture": [
+    {
+      "fixture": "illustration-01.png",
+      "recordId": 1,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 8
+        },
+        "crop 25%": {
+          "watermark": true,
+          "distance": 20
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "illustration-02.png",
+      "recordId": 2,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 12
+        },
+        "crop 25%": {
+          "watermark": true,
+          "distance": 34
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "illustration-03.png",
+      "recordId": 3,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 16
+        },
+        "crop 25%": {
+          "watermark": true,
+          "distance": 28
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 4
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "illustration-04.png",
+      "recordId": 4,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 2
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 12
+        },
+        "crop 25%": {
+          "watermark": true,
+          "distance": 26
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 8
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "illustration-05.png",
+      "recordId": 5,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 12
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 28
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 6
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "illustration-06.png",
+      "recordId": 6,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 12
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 24
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 2
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-01.png",
+      "recordId": 7,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 8
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 20
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-02.png",
+      "recordId": 8,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 6
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 26
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-03.png",
+      "recordId": 9,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 6
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 20
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 2
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-04.png",
+      "recordId": 10,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 10
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 24
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 2
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-05.png",
+      "recordId": 11,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 14
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 22
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-06.png",
+      "recordId": 12,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 10
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 16
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 2
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-07.png",
+      "recordId": 13,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 2
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 18
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-08.png",
+      "recordId": 14,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 14
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 24
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 2
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-09.png",
+      "recordId": 15,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 6
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 28
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 2
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "photo-10.png",
+      "recordId": 16,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 8
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 22
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "screenshot-01.png",
+      "recordId": 17,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 4
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 2
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 10
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 20
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 0
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "screenshot-02.png",
+      "recordId": 18,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 2
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 2
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 18
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 24
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 4
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 2
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": false,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "screenshot-03.png",
+      "recordId": 19,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 2
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 16
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 26
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 4
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": true,
+          "distance": 0
+        }
+      }
+    },
+    {
+      "fixture": "screenshot-04.png",
+      "recordId": 20,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": false,
+          "distance": 2
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 2
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 28
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 32
+        },
+        "social filter": {
+          "watermark": false,
+          "distance": 4
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": false,
+          "distance": 2
+        }
+      }
+    },
+    {
+      "fixture": "screenshot-05.png",
+      "recordId": 21,
+      "embedShift": [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0
+      ],
+      "transforms": {
+        "none (control)": {
+          "watermark": true,
+          "distance": 0
+        },
+        "screenshot": {
+          "watermark": true,
+          "distance": 0
+        },
+        "JPEG Q40": {
+          "watermark": false,
+          "distance": 2
+        },
+        "JPEG Q20": {
+          "watermark": false,
+          "distance": 0
+        },
+        "downscale 50%": {
+          "watermark": true,
+          "distance": 0
+        },
+        "downscale 25%": {
+          "watermark": true,
+          "distance": 2
+        },
+        "crop 10%": {
+          "watermark": true,
+          "distance": 16
+        },
+        "crop 25%": {
+          "watermark": false,
+          "distance": 26
+        },
+        "social filter": {
+          "watermark": true,
+          "distance": 4
+        },
+        "gaussian blur s=1.5": {
+          "watermark": true,
+          "distance": 2
+        },
+        "screenshot+JPEG Q40": {
+          "watermark": false,
+          "distance": 2
+        }
+      }
+    }
+  ]
+}
