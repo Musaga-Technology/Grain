@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deflateSync } from 'node:zlib';
+import { deflateSync } from 'fflate';
 import { decodePNG, fingerprint } from '../src/index.ts';
 
 /** Build a minimal valid PNG so the decoder is tested against known pixels. */

@@ -25,8 +25,8 @@ export { resize, scale, fitWithin, crop, cropFraction, flattenOnWhite, contentBo
 export { encodeCbor, type CborValue } from './cbor.ts';
 export {
   buildManifest, encodeManifest, encodeSignedManifest, manifestHash,
-  signManifest, verifyManifest,
+  signManifest, signManifestWith, verifyManifest,
   GRAIN_PHASH_ALG, TRUSTMARK_ALG, GRAIN_PHASH_ALG_ID,
-  type GrainManifest, type SoftBinding, type BuildManifestInput,
+  type GrainManifest, type SoftBinding, type BuildManifestInput, type ManifestSigner,
 } from './manifest.ts';
 export { resolve, type Resolution, type ResolveInput, type ResolvedRecord } from './resolve.ts';

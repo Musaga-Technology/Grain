@@ -1,4 +1,7 @@
-import { inflateSync } from 'node:zlib';
+// fflate rather than node:zlib: grain-core must run identically in the browser
+// and in Node (SPEC.md §4), and a Node-only codec would quietly break the
+// isomorphism the whole determinism argument rests on.
+import { inflateSync } from 'fflate';
 import type { RGBAImage } from './fingerprint.ts';
 
 /**
@@ -64,7 +67,7 @@ export function decodePNG(buf: Uint8Array): RGBAImage {
   const merged = new Uint8Array(idat.reduce((n, c) => n + c.length, 0));
   let off = 0;
   for (const c of idat) { merged.set(c, off); off += c.length; }
-  const raw = new Uint8Array(inflateSync(merged));
+  const raw = inflateSync(merged);
 
   // Undo per-scanline filtering (PNG spec 9.2).
   const stride = width * channels;

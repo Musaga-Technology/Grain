@@ -1,4 +1,4 @@
-import { deflateSync } from 'node:zlib';
+import { deflateSync } from 'fflate';
 import type { RGBAImage } from './fingerprint.ts';
 
 /**
@@ -55,7 +55,7 @@ export function encodePNG(img: RGBAImage): Uint8Array {
     raw[y * (stride + 1)] = 0; // filter: none
     raw.set(data.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
   }
-  chunk('IDAT', new Uint8Array(deflateSync(raw)));
+  chunk('IDAT', deflateSync(raw));
   chunk('IEND', new Uint8Array(0));
 
   const total = parts.reduce((n, p) => n + p.length, 0);

@@ -107,14 +107,30 @@ export function manifestHash(m: GrainManifest): Hex {
   return keccak256(encodeManifest(m));
 }
 
-/** EIP-191 personal_sign over keccak256(cbor(manifest without signature)). */
-export async function signManifest(m: GrainManifest, privateKey: Hex): Promise<GrainManifest> {
-  const account = privateKeyToAccount(privateKey);
-  if (account.address.toLowerCase() !== m.creator.toLowerCase()) {
-    throw new Error(`key does not match manifest creator: ${account.address} vs ${m.creator}`);
+/** Anything that can produce an EIP-191 signature over a digest. */
+export interface ManifestSigner {
+  address: Hex;
+  signMessage: (args: { message: { raw: Hex } }) => Promise<Hex>;
+}
+
+/**
+ * EIP-191 personal_sign over keccak256(cbor(manifest without signature)).
+ *
+ * Takes a signer rather than a raw key, because the browser's signing key comes
+ * from a passkey-derived session that never exposes its private key -- and
+ * should not have to in order to sign a manifest.
+ */
+export async function signManifestWith(m: GrainManifest, signer: ManifestSigner): Promise<GrainManifest> {
+  if (signer.address.toLowerCase() !== m.creator.toLowerCase()) {
+    throw new Error(`signer does not match manifest creator: ${signer.address} vs ${m.creator}`);
   }
-  const signature = await account.signMessage({ message: { raw: manifestHash(m) } });
+  const signature = await signer.signMessage({ message: { raw: manifestHash(m) } });
   return { ...m, signature };
+}
+
+/** Convenience wrapper for server-side and script use, where a key is in hand. */
+export async function signManifest(m: GrainManifest, privateKey: Hex): Promise<GrainManifest> {
+  return signManifestWith(m, privateKeyToAccount(privateKey));
 }
 
 /**
