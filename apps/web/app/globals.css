@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/*
+ * Restrained and editorial, closer to a photography publication than a dapp
+ * (UX_SPEC "Design direction"). No gradients, no glassmorphism, no animated
+ * backgrounds -- every one of those reads as crypto and works against the pitch.
+ *
+ * ONE ACCENT COLOUR, used almost nowhere. It is reserved for TAMPERED. If it
+ * appeared on buttons and links too, the alarm state would not land.
+ */
+:root {
+  --paper: #fbfaf8;
+  --ink: #16151a;
+  --ink-muted: #6a6770;
+  --ink-faint: #9b98a2;
+  --rule: #e5e2dd;
+  --surface: #ffffff;
+  --accent: #c8341f;
+  --accent-surface: #fdf2f0;
+
+  --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+/* Dark mode via prefers-color-scheme with no toggle: a toggle is a settings
+   surface, and this product has no settings. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #111015;
+    --ink: #f2f0ee;
+    --ink-muted: #9a97a1;
+    --ink-faint: #67646d;
+    --rule: #2a282f;
+    --surface: #191820;
+    --accent: #ff6a4d;
+    --accent-surface: #2a1714;
+  }
+}
+
+html, body { background: var(--paper); color: var(--ink); }
+body {
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+/* Focus is never removed -- it is how the drop zone is operated by keyboard. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Motion only where it is functional: the drop state, the progress line, the
+   result transition. Nothing decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes grain-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.grain-rise { animation: grain-rise 260ms cubic-bezier(0.2, 0, 0, 1) both; }
+
+@keyframes grain-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.grain-pulse { animation: grain-pulse 1.4s ease-in-out infinite; }

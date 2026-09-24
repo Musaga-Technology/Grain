@@ -2,3 +2,9 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'plugins/*'
+
+# create-next-app pulls these and they build native binaries; approving them
+# here keeps installs non-interactive.
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
