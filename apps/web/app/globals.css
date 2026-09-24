@@ -15,8 +15,15 @@
   --ink-faint: #9b98a2;
   --rule: #e5e2dd;
   --surface: #ffffff;
+  /* Alarm. Reserved for TAMPERED and nothing else -- if it appears on buttons
+     too, the alarm stops reading as an alarm. */
   --accent: #c8341f;
   --accent-surface: #fdf2f0;
+
+  /* Brand, for buttons and links. Separate from the alarm on purpose. */
+  --brand: #1f5f4f;
+  --brand-hover: #17493c;
+  --brand-soft: #eef5f2;
 
   --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
@@ -34,6 +41,9 @@
     --surface: #191820;
     --accent: #ff6a4d;
     --accent-surface: #2a1714;
+    --brand: #6fd8b6;
+    --brand-hover: #8ee5c8;
+    --brand-soft: #14231f;
   }
 }
 
@@ -71,3 +81,28 @@ body {
   50% { opacity: 1; }
 }
 .grain-pulse { animation: grain-pulse 1.4s ease-in-out infinite; }
+
+@keyframes grain-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.grain-float { animation: grain-float 6s ease-in-out infinite; }
+
+.grain-delay-1 { animation-delay: 80ms; }
+.grain-delay-2 { animation-delay: 160ms; }
+.grain-delay-3 { animation-delay: 240ms; }
+
+.grain-btn {
+  background: var(--brand);
+  color: var(--paper);
+  transition: background 160ms ease, transform 160ms ease;
+}
+.grain-btn:hover { background: var(--brand-hover); transform: translateY(-1px); }
+.grain-btn:active { transform: none; }
+
+.grain-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.grain-card:hover { border-color: var(--brand); }

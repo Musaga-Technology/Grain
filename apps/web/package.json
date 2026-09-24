@@ -8,16 +8,16 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "16.3.6",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "@grain/core": "workspace:*"
+    "@grain/core": "workspace:*",
+    "next": "15.5.26",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
