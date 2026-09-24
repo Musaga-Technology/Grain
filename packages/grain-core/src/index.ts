@@ -29,3 +29,4 @@ export {
   GRAIN_PHASH_ALG, TRUSTMARK_ALG, GRAIN_PHASH_ALG_ID,
   type GrainManifest, type SoftBinding, type BuildManifestInput,
 } from './manifest.ts';
+export { resolve, type Resolution, type ResolveInput, type ResolvedRecord } from './resolve.ts';
