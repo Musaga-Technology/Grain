@@ -1,0 +1,25 @@
+{
+  "network": "monad-testnet",
+  "chainId": 10143,
+  "deployedAt": "2026-09-24",
+  "deployer": "0x29bF97ae2DE157d81eF70ACEBfaD15BeAD1F8662",
+  "contracts": {
+    "FingerprintIndex": "0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203",
+    "GrainRegistry": "0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20",
+    "CreatorRegistry": "0x783159d464B15180935222b342aEDc3Cf5ff2DE7",
+    "LicenseRegistry": "0x71260B7e406566D0fd880320b58537eE27895B1E"
+  },
+  "firstRegistration": {
+    "recordId": 1,
+    "txHash": "0xa5ce24b483df547c9bab5fe60f62770c29ff0c86ace8c46cb5d481328ba7fafd",
+    "blockNumber": 65178326,
+    "gasUsed": 579274,
+    "note": "Cold-bucket registration on a fresh deployment: all 8 LSH buckets empty plus a cold nextRecordId slot."
+  },
+  "onchainVerification": {
+    "sameImage": 0,
+    "jpegQ20Copy": 0,
+    "croppedCopy10Percent": 8,
+    "unrelatedImage": 31
+  }
+}
