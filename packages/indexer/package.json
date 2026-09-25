@@ -8,5 +8,12 @@
     "codegen": "envio codegen",
     "dev": "envio dev",
     "start": "envio start"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "envio": "^3.12.1"
   }
 }

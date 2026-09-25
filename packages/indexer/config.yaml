@@ -1,32 +1,42 @@
 name: grain
 description: >-
-  Read accelerator for the Grain registry. The chain remains the source of
-  truth -- SPEC.md 7 requires the resolver to keep working with this indexer
-  down, and the fallback is demonstrated rather than claimed.
+  Read accelerator for the Grain registry. The chain stays the source of truth:
+  SPEC.md §7 requires the resolver to keep answering with this indexer down, and
+  that fallback is demonstrated rather than claimed.
 
-networks:
+# Transaction hashes are not delivered unless requested. A record page needs
+# one so a person can follow the registration to the chain themselves, which is
+# the whole point of the registry being public.
+field_selection:
+  transaction_fields:
+    - hash
+
+# Contract shapes are declared once and attached to a chain below.
+contracts:
+  - name: GrainRegistry
+    handler: src/EventHandlers.ts
+    events:
+      - event: ManifestRegistered(uint64 indexed recordId, address indexed creator, uint64 fingerprint, bytes32 manifestHash, bytes manifest)
+      - event: ManifestSuperseded(uint64 indexed oldId, uint64 indexed newId)
+      - event: ManifestRevoked(uint64 indexed recordId)
+
+  - name: CreatorRegistry
+    handler: src/EventHandlers.ts
+    events:
+      - event: ProfileSet(address indexed creator, string handle, uint256 licensePriceWei)
+
+  - name: LicenseRegistry
+    handler: src/EventHandlers.ts
+    events:
+      - event: LicenseGranted(uint64 indexed recordId, address indexed licensee, address indexed creator, uint256 amountWei, uint40 grantedAt)
+
+chains:
   - id: 10143 # Monad testnet
     start_block: 65176523 # the deployment block; nothing exists before it
     contracts:
       - name: GrainRegistry
-        address:
-          - 0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20
-        handler: src/EventHandlers.ts
-        events:
-          - event: ManifestRegistered(uint64 indexed recordId, address indexed creator, uint64 fingerprint, bytes32 manifestHash, bytes manifest)
-          - event: ManifestSuperseded(uint64 indexed oldId, uint64 indexed newId)
-          - event: ManifestRevoked(uint64 indexed recordId)
-
+        address: "0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20"
       - name: CreatorRegistry
-        address:
-          - 0x783159d464B15180935222b342aEDc3Cf5ff2DE7
-        handler: src/EventHandlers.ts
-        events:
-          - event: ProfileSet(address indexed creator, string handle, uint256 licensePriceWei)
-
+        address: "0x783159d464B15180935222b342aEDc3Cf5ff2DE7"
       - name: LicenseRegistry
-        address:
-          - 0x71260B7e406566D0fd880320b58537eE27895B1E
-        handler: src/EventHandlers.ts
-        events:
-          - event: LicenseGranted(uint64 indexed recordId, address indexed licensee, address indexed creator, uint256 amountWei, uint40 grantedAt)
+        address: "0x71260B7e406566D0fd880320b58537eE27895B1E"
