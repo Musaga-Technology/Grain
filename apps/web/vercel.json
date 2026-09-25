@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "cd ../.. && pnpm --filter @grain/web build",
+  "installCommand": "cd ../.. && pnpm install",
+  "functions": {
+    "app/api/prepare/route.ts": { "maxDuration": 60 }
+  }
+}

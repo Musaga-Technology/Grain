@@ -114,6 +114,12 @@ export class Chain {
     });
   }
 
+  async nextRecordId(): Promise<bigint> {
+    return this.client.readContract({
+      address: this.cfg.registry, abi: registryAbi, functionName: 'nextRecordId',
+    });
+  }
+
   async health(): Promise<{ block: bigint; nextRecordId: bigint }> {
     const [block, nextRecordId] = await Promise.all([
       this.client.getBlockNumber(),

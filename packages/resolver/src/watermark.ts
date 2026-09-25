@@ -1,5 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { writeFile, readFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -22,8 +22,14 @@ export interface WatermarkConfig {
   timeoutMs?: number;
 }
 
+interface DaemonReply {
+  ok: boolean;
+  bits?: string | null;
+  error?: string;
+}
+
 interface Pending {
-  resolve: (bits: string | null) => void;
+  resolve: (reply: DaemonReply) => void;
   reject: (e: Error) => void;
   timer: NodeJS.Timeout;
 }
@@ -46,10 +52,9 @@ class Daemon {
       if (!pending) return;
       clearTimeout(pending.timer);
       try {
-        const res = JSON.parse(line) as { ok: boolean; bits?: string | null; error?: string };
-        pending.resolve(res.ok ? (res.bits ?? null) : null);
-      } catch {
-        pending.resolve(null);
+        pending.resolve(JSON.parse(line) as DaemonReply);
+      } catch (e) {
+        pending.resolve({ ok: false, error: `unparseable reply: ${line.slice(0, 200)}` });
       }
     });
 
@@ -60,27 +65,27 @@ class Daemon {
     // look like the watermark path simply never matching.
     const die = () => {
       this.proc = null;
-      for (const p of this.queue) { clearTimeout(p.timer); p.resolve(null); }
+      for (const p of this.queue) { clearTimeout(p.timer); p.resolve({ ok: false, error: 'daemon exited' }); }
       this.queue = [];
     };
     proc.on('exit', die);
     proc.on('error', die);
   }
 
-  request(path: string): Promise<string | null> {
+  request(payload: Record<string, unknown>, timeoutMs?: number): Promise<DaemonReply> {
     if (!this.proc) this.start();
     const proc = this.proc;
-    if (!proc) return Promise.resolve(null);
+    if (!proc) return Promise.resolve({ ok: false, error: 'daemon unavailable' });
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         const i = this.queue.findIndex((p) => p.timer === timer);
         if (i >= 0) this.queue.splice(i, 1);
-        resolve(null);
-      }, this.cfg.timeoutMs ?? 20_000);
+        resolve({ ok: false, error: 'timed out' });
+      }, timeoutMs ?? this.cfg.timeoutMs ?? 20_000);
 
       this.queue.push({ resolve, reject, timer });
-      proc.stdin.write(JSON.stringify({ op: 'decode', path }) + '\n');
+      proc.stdin.write(JSON.stringify(payload) + '\n');
     });
   }
 }
@@ -97,8 +102,13 @@ export async function decodeWatermark(
   const path = join(dir, 'asset.png');
   try {
     await writeFile(path, image);
-    const bits = await daemon.request(path);
-    if (!bits) return null;
+    const reply = await daemon.request({ op: 'decode', path });
+    if (!reply.ok) {
+      console.warn('[watermark] decode failed:', reply.error);
+      return null;
+    }
+    const bits = reply.bits;
+    if (!bits) return null; // a miss, which is the normal case
 
     // BCH_SUPER carries 40 data bits; the rest is padding.
     const id = BigInt('0b' + bits.slice(0, 40));
@@ -110,3 +120,56 @@ export async function decodeWatermark(
     await rm(dir, { recursive: true, force: true });
   }
 }
+
+
+/**
+ * Embed a watermark, through the same resident process.
+ *
+ * Encoding lives here rather than in the web app because the model is 62 MB and
+ * has to stay loaded: a serverless function would reload it per request, which
+ * is the 2-second penalty this daemon exists to remove. One service owns
+ * TrustMark; the web app owns the interface.
+ */
+export async function embedWatermark(
+  image: Uint8Array,
+  recordId: bigint,
+  cfg: WatermarkConfig,
+  strength = DEFAULT_STRENGTH,
+): Promise<Uint8Array | null> {
+  daemon ??= new Daemon(cfg);
+
+  const dir = await mkdtemp(join(tmpdir(), 'grain-embed-'));
+  const input = join(dir, 'in.png');
+  const output = join(dir, 'out.png');
+  try {
+    await writeFile(input, image);
+    // BCH_SUPER carries 40 data bits (docs/ROBUSTNESS.md).
+    const bits = recordId.toString(2).padStart(40, '0');
+    const reply = await daemon.request(
+      { op: 'encode', path: input, out: output, bits, strength },
+      60_000,
+    );
+    if (!reply.ok) {
+      console.error('[watermark] embed failed:', reply.error);
+      return null;
+    }
+    const marked = await readFile(output);
+    if (marked.length === 0) {
+      console.error('[watermark] embed produced an empty file');
+      return null;
+    }
+    return new Uint8Array(marked);
+  } catch {
+    return null;
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * WM_STRENGTH. The crate documents 0.95 as normal. SPEC 5.2 wants this pinned
+ * to the highest value with no visible ripple on the actual demo images, which
+ * is a judgement by eye rather than a measurement -- it stays at the documented
+ * default until someone has looked.
+ */
+export const DEFAULT_STRENGTH = 0.95;

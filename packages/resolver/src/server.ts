@@ -4,7 +4,7 @@ import { cors } from 'hono/cors';
 import { readFileSync } from 'node:fs';
 import { decodeImage, fingerprint, resolve, MATCH_THRESHOLD, TAMPER_THRESHOLD } from '@grain/core';
 import { Chain } from './chain.ts';
-import { decodeWatermark } from './watermark.ts';
+import { decodeWatermark, embedWatermark } from './watermark.ts';
 
 /**
  * C2PA Soft Binding Resolution API (SPEC.md §7).
@@ -125,6 +125,44 @@ app.post('/v1/resolve', async (c) => {
     queryFingerprint: `0x${queryFingerprint.toString(16).padStart(16, '0')}`,
     candidatesExamined: candidates.length,
   }));
+});
+
+/**
+ * Reserve a recordId and embed the watermark.
+ *
+ * Registration cannot do this in the browser: TrustMark's JavaScript build is
+ * decode-only, so encoding needs the Rust crate. It lives here rather than in
+ * the web app because the model must stay resident -- a serverless function
+ * would reload 62 MB per request.
+ *
+ * The id is reserved BEFORE marking because the watermark carries it, and
+ * register() takes it as expectedRecordId and reverts if another registration
+ * landed first, rather than binding this mark to someone else's record.
+ */
+app.post('/v1/embed', async (c) => {
+  const body = await c.req.parseBody();
+  const file = body['image'];
+  if (!(file instanceof File)) return c.json({ error: 'expected an image field' }, 400);
+  if (file.size > MAX_UPLOAD_BYTES) return c.json({ error: 'image too large' }, 413);
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  try {
+    decodeImage(bytes); // reject anything we cannot read before spending a reservation
+  } catch {
+    return c.json({ error: 'unsupported image format: expected PNG or JPEG' }, 415);
+  }
+
+  const recordId = await chain.nextRecordId();
+  const marked = await embedWatermark(bytes, recordId, wm);
+  if (!marked) return c.json({ error: 'could not watermark that image' }, 500);
+
+  return new Response(marked as unknown as BodyInit, {
+    headers: {
+      'content-type': 'image/png',
+      'x-grain-record-id': recordId.toString(),
+      'cache-control': 'no-store',
+    },
+  });
 });
 
 const port = Number(env('PORT', '8787'));

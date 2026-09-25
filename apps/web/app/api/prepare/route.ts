@@ -1,37 +1,28 @@
-import { execFile } from 'node:child_process';
-import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { promisify } from 'node:util';
-import { createPublicClient, http, parseAbi } from 'viem';
-import deployments from '../../../../../deployments/monad-testnet.json';
-
-const run = promisify(execFile);
-
 /**
- * Reserve a recordId and embed the watermark.
+ * Reserve a recordId and watermark the image.
  *
- * THIS CANNOT HAPPEN IN THE BROWSER. SPEC §8.4 step 5 says the watermark is
- * embedded client-side, but TrustMark's official JavaScript build is
- * decode-only; encoding needs the Rust crate. So the image is sent here, marked,
- * and sent back, and the browser does everything after that.
+ * A PROXY, DELIBERATELY. The work happens in the resolver because TrustMark's
+ * decoder is 45 MB and its encoder 17 MB, and both must stay resident: a
+ * serverless function reloads them per invocation, which is exactly the two
+ * seconds the daemon exists to remove. One service owns TrustMark; this app
+ * owns the interface.
  *
- * The recordId has to be decided BEFORE marking, because the watermark carries
- * it. The registry's register() takes that id as `expectedRecordId` and reverts
- * if another registration landed first, rather than silently binding this
- * watermark to someone else's record.
+ * Keeping it as a same-origin route rather than calling the resolver from the
+ * browser means the upload is not subject to the resolver's CORS surface and
+ * the resolver URL can change without a client rebuild.
  */
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const MAX_BYTES = 25 * 1024 * 1024;
-const TM = process.env.TRUSTMARK_BIN ?? '.tools/trustmark';
-const MODELS = process.env.TRUSTMARK_MODELS ?? '.tools/models';
-
-const registryAbi = parseAbi(['function nextRecordId() view returns (uint64)']);
 
 export async function POST(req: Request) {
+  const resolver = process.env.RESOLVER_URL ?? process.env.NEXT_PUBLIC_RESOLVER_URL;
+  if (!resolver) {
+    return Response.json({ error: 'server not configured' }, { status: 500 });
+  }
+
   const form = await req.formData();
   const file = form.get('image');
   if (!(file instanceof File)) {
@@ -41,36 +32,29 @@ export async function POST(req: Request) {
     return Response.json({ error: 'That image is too large. Try one under 25MB.' }, { status: 413 });
   }
 
-  const client = createPublicClient({ transport: http(process.env.RPC_TESTNET_ENDPOINT) });
-  const recordId = await client.readContract({
-    address: deployments.contracts.GrainRegistry as `0x${string}`,
-    abi: registryAbi,
-    functionName: 'nextRecordId',
-  });
+  const upstream = new FormData();
+  upstream.append('image', file);
 
-  const dir = await mkdtemp(join(tmpdir(), 'grain-mark-'));
+  let res: Response;
   try {
-    const input = join(dir, 'in.png');
-    const output = join(dir, 'out.png');
-    await writeFile(input, new Uint8Array(await file.arrayBuffer()));
-
-    // BCH_SUPER carries 40 data bits, which is the CLI default and ours.
-    const payload = recordId.toString(2).padStart(40, '0');
-    await run(TM, ['-m', MODELS, 'encode', '-i', input, '-o', output, '-w', payload],
-      { timeout: 60_000 });
-
-    const marked = await readFile(output);
-    return new Response(new Uint8Array(marked), {
-      headers: {
-        'content-type': 'image/png',
-        'x-grain-record-id': recordId.toString(),
-        'cache-control': 'no-store',
-      },
-    });
+    res = await fetch(`${resolver}/v1/embed`, { method: 'POST', body: upstream });
   } catch (e) {
-    console.error('watermark embed failed', e);
-    return Response.json({ error: "Grain couldn't prepare that image. Try again." }, { status: 500 });
-  } finally {
-    await rm(dir, { recursive: true, force: true });
+    console.error('embed upstream unreachable', e);
+    return Response.json({ error: "Grain couldn't prepare that image. Try again." }, { status: 502 });
   }
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    console.error('embed upstream failed', res.status, detail.slice(0, 300));
+    return Response.json({ error: "Grain couldn't prepare that image. Try again." }, { status: 502 });
+  }
+
+  return new Response(res.body, {
+    headers: {
+      'content-type': 'image/png',
+      // The reserved id rides along; the browser needs it to build the manifest.
+      'x-grain-record-id': res.headers.get('x-grain-record-id') ?? '',
+      'cache-control': 'no-store',
+    },
+  });
 }

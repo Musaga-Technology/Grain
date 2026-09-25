@@ -104,7 +104,9 @@ fn main() -> io::Result<()> {
                 Err(e) => Response::err(e),
                 Ok(img) => match tm.encode(bits, img, strength) {
                     Err(e) => Response::err(e),
-                    Ok(marked) => match marked.save(&out) {
+                    // to_rgba8 first: encode returns Rgba32F and the PNG encoder
+                // rejects that colour type. The CLI does the same conversion.
+                Ok(marked) => match marked.to_rgba8().save(&out) {
                         Err(e) => Response::err(e),
                         Ok(()) => Response::ok(),
                     },
