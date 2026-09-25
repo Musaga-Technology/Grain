@@ -16,6 +16,17 @@ export const CONTRACTS = deployments.contracts as {
   LicenseRegistry: `0x${string}`;
 };
 
+export const indexAbi = [
+  {
+    type: 'function', name: 'verify', stateMutability: 'view',
+    inputs: [
+      { name: 'recordId', type: 'uint64' },
+      { name: 'queryFingerprint', type: 'uint64' },
+    ],
+    outputs: [{ type: 'uint8' }],
+  },
+] as const;
+
 export const registryAbi = [
   {
     type: 'function', name: 'register', stateMutability: 'nonpayable',

@@ -9,6 +9,12 @@ export interface ResolvedRecord {
   revoked: boolean;
 }
 
+/** What the resolver adds alongside the resolution itself. */
+export interface ResolveExtras {
+  queryFingerprint: string;
+  candidatesExamined: number;
+}
+
 /** Mirrors grain-core's Resolution, serialised. No confidence field exists, deliberately. */
 export type Resolution =
   | { state: 'RESOLVED'; record: ResolvedRecord; via: 'watermark' | 'fingerprint' | 'both'; distance: number }

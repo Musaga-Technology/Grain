@@ -5,7 +5,9 @@ import Image from 'next/image';
 import { Header, Footer } from '../components/Chrome';
 import { Result } from '../components/Result';
 import { Progress } from '../components/Progress';
-import type { Resolution } from '../lib/types';
+import type { Resolution, ResolveExtras } from '../lib/types';
+import { createPublicClient, http } from 'viem';
+import { CONTRACTS, indexAbi } from '../lib/chain';
 
 const RESOLVER = process.env.NEXT_PUBLIC_RESOLVER_URL ?? 'http://localhost:8787';
 const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
@@ -13,12 +15,13 @@ const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
 type Phase =
   | { kind: 'idle' }
   | { kind: 'working'; step: number; slow: boolean; preview: string }
-  | { kind: 'done'; result: Resolution; preview: string }
+  | { kind: 'done'; result: Resolution; extras: ResolveExtras; preview: string }
   | { kind: 'error'; message: string };
 
 export default function Verify() {
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [dragging, setDragging] = useState(false);
+  const [chainDistance, setChainDistance] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
 
@@ -43,7 +46,13 @@ export default function Verify() {
       body.append('image', file);
       const res = await fetch(`${RESOLVER}/v1/resolve`, { method: 'POST', body });
       if (!res.ok) throw new Error(String(res.status));
-      setPhase({ kind: 'done', result: (await res.json()) as Resolution, preview });
+      const payload = (await res.json()) as Resolution & ResolveExtras;
+      setPhase({
+        kind: 'done',
+        result: payload,
+        extras: { queryFingerprint: payload.queryFingerprint, candidatesExamined: payload.candidatesExamined },
+        preview,
+      });
     } catch {
       setPhase({
         kind: 'error',
@@ -95,7 +104,36 @@ export default function Verify() {
     };
   }, [handle]);
 
-  const reset = () => setPhase({ kind: 'idle' });
+  const reset = () => { setChainDistance(null); setPhase({ kind: 'idle' }); };
+
+  /*
+   * Ask the contract directly, from the browser, bypassing the resolver
+   * entirely. This is how a sceptic confirms the indexer is not lying, and it
+   * is the operable answer to "why not just a database" -- a database cannot
+   * let you check its answer without trusting whoever served it.
+   */
+  const verifyOnChain = useCallback(async () => {
+    if (phase.kind !== 'done') return;
+    const record =
+      phase.result.state === 'RESOLVED' ? phase.result.record
+      : phase.result.state === 'TAMPERED' ? phase.result.claimed
+      : phase.result.state === 'UNCERTAIN' ? phase.result.candidates[0]
+      : null;
+    if (!record) return;
+
+    try {
+      const client = createPublicClient({ transport: http(process.env.NEXT_PUBLIC_RPC_URL) });
+      const distance = await client.readContract({
+        address: CONTRACTS.FingerprintIndex,
+        abi: indexAbi,
+        functionName: 'verify',
+        args: [BigInt(record.recordId), BigInt(phase.extras.queryFingerprint)],
+      });
+      setChainDistance(Number(distance));
+    } catch {
+      setChainDistance(null);
+    }
+  }, [phase]);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -151,7 +189,7 @@ export default function Verify() {
 
           {phase.kind === 'done' && (
             <>
-              <Result result={phase.result} />
+              <Result result={phase.result} onVerifyOnChain={verifyOnChain} chainDistance={chainDistance} />
               <div className="mt-10 text-center">
                 <button onClick={reset} className="text-sm underline underline-offset-4"
                         style={{ color: 'var(--ink-faint)' }}>
