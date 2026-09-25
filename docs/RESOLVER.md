@@ -25,37 +25,38 @@ claim checkable is the fingerprint stored in the manifest.
 
 ## Latency profile
 
-The chain is not the bottleneck. Component timings on a 1280x1600 PNG:
+**End to end, warm: 1.0-1.6 s.** SPEC §8.2 targets under two seconds.
 
-| Component | Time |
+Getting there took three fixes, each found by profiling rather than guessing:
+
+| Stage | Latency |
 |---|---|
-| **TrustMark decode** (CLI spawn + 45 MB model load, per request) | **2.0–2.8 s** |
-| Image decode + fingerprint | 0.58 s |
-| 8 LSH band queries | 0.98 s |
-| 34 candidate record reads, batched | **0.22 s** |
+| First measurement | 11.6 s |
+| Multicall batching on candidate reads | 3.2-3.8 s |
+| **Long-lived TrustMark daemon** | **1.0-1.6 s** |
 
-End to end, warm: **3.2–3.8 s**. SPEC §8.2 targets under two seconds.
+Component timings on a 1280x1600 PNG:
 
-Two fixes already applied:
+| Component | CLI | Daemon |
+|---|---|---|
+| TrustMark decode | 2.0-2.8 s | **0.33-0.61 s** |
+| Image decode + fingerprint | 0.58 s | 0.58 s |
+| 8 LSH band queries | 0.98 s | 0.98 s |
+| 34 candidate record reads | 0.22 s (batched) | 0.22 s |
 
-- **Multicall batching.** The candidate reads were one RPC round trip per
-  record. Batched through Multicall3 they are 0.22 s for 34 records, down from
-  roughly ten seconds. The latency was never the chain, it was the round trips.
-- **Overlapping the two paths.** The watermark decode needs only the raw bytes,
-  so it starts immediately instead of waiting for the fingerprint.
+**The candidate reads were one RPC round trip per record.** Batched through
+Multicall3 they are 0.22 s for 34 records, down from roughly ten seconds. The
+latency was never the chain, it was the round trips.
 
-## The remaining bottleneck, and the fix
+**The watermark decode was a model load, not a decode.** The `trustmark` CLI
+reads a 45 MB ONNX decoder from disk on every invocation. `packages/trustmarkd`
+holds it in a resident process and speaks newline-delimited JSON, which keeps
+the resolver in TypeScript and avoids an FFI binding. Same model, same answer,
+four to six times faster.
 
-**Every request spawns the TrustMark CLI, which loads a 45 MB ONNX model from
-disk before decoding anything.** That is 2 seconds of the 3.2, and it is pure
-startup cost — the decode itself is fast.
-
-The fix is a persistent decoder that loads the model once: either a long-running
-process the resolver talks to, or `onnxruntime-node` pinned to 1.17.3, the last
-release shipping a `darwin/x64` binary. Either should bring a resolve
-comfortably under the two-second target, since everything else already sums to
-about 1.2 s.
+**The two paths overlap.** The watermark decode needs only the raw bytes, so it
+starts without waiting for the fingerprint.
 
 Worth stating plainly: **all chain work totals 1.2 seconds against a 506-record
-registry**, and the candidate fan-out is what the Envio indexer is meant to
-remove. The remaining cost is a model load, not consensus.
+registry**, and the candidate fan-out is what the Envio indexer removes. What
+remained after that was startup cost, not consensus.

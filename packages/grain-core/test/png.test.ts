@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deflateSync } from 'fflate';
-import { decodePNG, fingerprint } from '../src/index.ts';
+import { zlibSync } from 'fflate';
+import { decodePNG, encodePNG, fingerprint } from '../src/index.ts';
 
 /** Build a minimal valid PNG so the decoder is tested against known pixels. */
 function makePNG(w: number, h: number, rgba: number[][], filter = 0): Uint8Array {
@@ -57,7 +57,7 @@ function makePNG(w: number, h: number, rgba: number[][], filter = 0): Uint8Array
       raw.push(v & 0xff);
     }
   }
-  chunk('IDAT', [...deflateSync(Uint8Array.from(raw))]);
+  chunk('IDAT', [...zlibSync(Uint8Array.from(raw))]);
   chunk('IEND', []);
   return Uint8Array.from(chunks);
 }
@@ -90,4 +90,46 @@ test('filter choice does not change the fingerprint', () => {
 
 test('rejects what it cannot decode rather than guessing', () => {
   assert.throws(() => decodePNG(new Uint8Array(16)), /not a PNG/);
+});
+
+test('IDAT is zlib-wrapped, not raw deflate', () => {
+  // PNG requires RFC 1950 framing. Writing raw deflate produces a file only
+  // this library can read, and reading raw deflate rejects every PNG written
+  // by anything else. Both directions broke silently when fflate replaced
+  // node:zlib, because the encoder and decoder were consistently wrong with
+  // each other and the round-trip tests still passed.
+  const px = Array.from({ length: 16 }, (_, i) => [i * 16, 0, 255 - i * 16, 255]);
+  const png = encodePNG(decodePNG(makePNG(4, 4, px)));
+
+  // Find IDAT and check the first byte of its payload is a zlib CMF.
+  const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
+  let pos = 8;
+  let checked = false;
+  while (pos < png.length) {
+    const len = view.getUint32(pos);
+    const type = String.fromCharCode(png[pos + 4], png[pos + 5], png[pos + 6], png[pos + 7]);
+    if (type === 'IDAT') {
+      const cmf = png[pos + 8];
+      assert.equal(cmf & 0x0f, 8, 'zlib compression method must be deflate (8)');
+      const flg = png[pos + 9];
+      assert.equal((cmf * 256 + flg) % 31, 0, 'zlib header checksum must be valid');
+      checked = true;
+      break;
+    }
+    pos += len + 12;
+  }
+  assert.ok(checked, 'no IDAT chunk found');
+});
+
+test('decodes a PNG this library did not write', async () => {
+  // The regression guard. Every other PNG test builds its input with the same
+  // code under test, so a framing bug stays invisible. This one reads a file
+  // produced by an entirely different encoder.
+  const { readFileSync, existsSync } = await import('node:fs');
+  const path = new URL('../../../fixtures/sources/photo-01.png', import.meta.url).pathname;
+  if (!existsSync(path)) return; // fixtures are optional in a fresh clone
+
+  const img = decodePNG(new Uint8Array(readFileSync(path)));
+  assert.ok(img.width > 0 && img.height > 0);
+  assert.equal(img.data.length, img.width * img.height * 4);
 });

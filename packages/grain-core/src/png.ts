@@ -1,7 +1,11 @@
 // fflate rather than node:zlib: grain-core must run identically in the browser
 // and in Node (SPEC.md §4), and a Node-only codec would quietly break the
 // isomorphism the whole determinism argument rests on.
-import { inflateSync } from 'fflate';
+// unzlibSync, not inflateSync: PNG's IDAT stream is zlib-wrapped (RFC 1950),
+// not raw deflate (RFC 1951). fflate distinguishes them where node:zlib's
+// inflateSync accepts both, which is how the swap to fflate silently broke
+// reading any PNG this library did not itself write.
+import { unzlibSync } from 'fflate';
 import type { RGBAImage } from './fingerprint.ts';
 
 /**
@@ -67,7 +71,7 @@ export function decodePNG(buf: Uint8Array): RGBAImage {
   const merged = new Uint8Array(idat.reduce((n, c) => n + c.length, 0));
   let off = 0;
   for (const c of idat) { merged.set(c, off); off += c.length; }
-  const raw = inflateSync(merged);
+  const raw = unzlibSync(merged);
 
   // Undo per-scanline filtering (PNG spec 9.2).
   const stride = width * channels;

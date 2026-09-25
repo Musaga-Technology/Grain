@@ -1,4 +1,6 @@
-import { deflateSync } from 'fflate';
+// zlibSync, not deflateSync: PNG requires a zlib-wrapped IDAT stream. Raw
+// deflate produces a file that only this library can read.
+import { zlibSync } from 'fflate';
 import type { RGBAImage } from './fingerprint.ts';
 
 /**
@@ -55,7 +57,7 @@ export function encodePNG(img: RGBAImage): Uint8Array {
     raw[y * (stride + 1)] = 0; // filter: none
     raw.set(data.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
   }
-  chunk('IDAT', deflateSync(raw));
+  chunk('IDAT', zlibSync(raw));
   chunk('IEND', new Uint8Array(0));
 
   const total = parts.reduce((n, p) => n + p.length, 0);

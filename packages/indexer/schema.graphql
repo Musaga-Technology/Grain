@@ -1,0 +1,62 @@
+"""
+A registered manifest. The full CBOR lives in the event, not in contract
+storage, so the indexer is where it becomes queryable without replaying logs.
+"""
+type Record {
+  id: ID! # the recordId, as a string
+  recordId: BigInt!
+  creator: String! @index
+  creatorEntity: Creator
+  fingerprint: BigInt!
+  manifestHash: String!
+  "Full CBOR manifest, decoded from the event payload."
+  manifest: String!
+  registeredAt: Int! @index
+  blockNumber: Int!
+  txHash: String!
+  supersededBy: BigInt
+  revoked: Boolean! @index
+  bands: [FingerprintBand!]! @derivedFrom(field: "record")
+}
+
+"""
+One LSH band value for one record. Eight rows per record.
+
+MODELLED AS ROWS RATHER THAN AN ARRAY COLUMN ON PURPOSE. The obvious design is
+an array of band values on Record queried with an overlap operator, but that
+operator's availability was an open question in the research notes. Rows sidestep
+it: the candidate fan-out becomes a single indexed `key_in` lookup over the eight
+keys the query fingerprint produces, which is a plain B-tree hit rather than an
+array scan.
+"""
+type FingerprintBand {
+  "band:value:recordId, unique per row"
+  id: ID!
+  "band:value -- what a candidate query looks up, so it carries the index"
+  key: String! @index
+  band: Int!
+  value: Int!
+  record: Record!
+  "Denormalised so a fan-out does not need to join to filter."
+  revoked: Boolean! @index
+}
+
+type Creator {
+  id: ID! # the address
+  address: String!
+  handle: String @index
+  profileURI: String
+  licensePriceWei: BigInt!
+  recordCount: Int!
+  records: [Record!]! @derivedFrom(field: "creatorEntity")
+}
+
+type License {
+  id: ID!
+  recordId: BigInt! @index
+  licensee: String! @index
+  creator: String! @index
+  amountWei: BigInt!
+  grantedAt: Int!
+  txHash: String!
+}

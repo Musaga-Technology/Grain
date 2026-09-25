@@ -28,7 +28,7 @@ const chain = new Chain({
 });
 
 const wm = {
-  binary: env('TRUSTMARK_BIN', '.tools/trustmark'),
+  binary: env('TRUSTMARKD_BIN', 'packages/trustmarkd/target/release/trustmarkd'),
   models: env('TRUSTMARK_MODELS', '.tools/models'),
 };
 
