@@ -9,6 +9,7 @@ import {
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
 import { identitySession, PasskeyUnavailable, storedCredential } from '../lib/mera';
+import { checkPasskeySupport, prfAdvice } from '../lib/passkey-support';
 import { monadTestnet, CONTRACTS, registryAbi } from '../lib/chain';
 
 /**
@@ -32,7 +33,8 @@ type Phase =
   | { kind: 'ready'; file: File; preview: string; wideRatio: boolean }
   | { kind: 'working'; message: string; preview: string }
   | { kind: 'done'; recordId: string; preview: string; filename: string }
-  | { kind: 'error'; message: string; preview?: string };
+  | { kind: 'error'; message: string; preview?: string }
+  | { kind: 'passkey-blocked'; headline: string; steps: string[]; preview: string };
 
 export default function Register() {
   const [phase, setPhase] = useState<Phase>({ kind: 'choosing' });
@@ -56,6 +58,15 @@ export default function Register() {
   const register = useCallback(async (file: File, preview: string) => {
     const step = (message: string) => setPhase({ kind: 'working', message, preview });
 
+    // Checked BEFORE the ceremony. Mera creates the passkey first and evaluates
+    // PRF second, and a failure after creation strands a credential on the
+    // authenticator that nothing can clean up.
+    const support = await checkPasskeySupport();
+    if (!support.ok) {
+      setPhase({ kind: 'error', message: support.message, preview });
+      return;
+    }
+
     let session;
     try {
       step(storedCredential() ? 'Waiting for your passkey' : 'Creating your passkey');
@@ -63,10 +74,18 @@ export default function Register() {
       // connection, no network prompt.
       session = await identitySession(title || undefined);
     } catch (e) {
-      const message = e instanceof PasskeyUnavailable
-        ? e.message
-        : "Grain couldn't use your passkey just now. Try again.";
-      setPhase({ kind: 'error', message, preview });
+      if (e instanceof PasskeyUnavailable && e.code === 'PRF_UNAVAILABLE') {
+        // Not a dead end: on desktop Chrome the passkey is fine, it is where
+        // Chrome saved it that breaks PRF, and that is fixable in place.
+        const advice = prfAdvice();
+        setPhase({ kind: 'passkey-blocked', ...advice, preview });
+        return;
+      }
+      setPhase({
+        kind: 'error',
+        message: e instanceof PasskeyUnavailable ? e.message : "Grain couldn't use your passkey just now. Try again.",
+        preview,
+      });
       return;
     }
 
@@ -219,6 +238,30 @@ export default function Register() {
               <a href={`/r/${phase.recordId}`} className="grain-btn inline-block mt-7 px-6 py-3 rounded-full text-base font-medium">
                 See your record
               </a>
+            </div>
+          )}
+
+          {phase.kind === 'passkey-blocked' && (
+            <div className="grain-rise">
+              <h2 style={{ fontFamily: 'var(--serif)' }} className="text-2xl sm:text-3xl leading-tight">
+                {phase.headline}
+              </h2>
+              <ol className="mt-6 space-y-3">
+                {phase.steps.map((s, i) => (
+                  <li key={i} className="flex gap-3 text-[15px] leading-relaxed">
+                    <span className="shrink-0 tabular-nums" style={{ color: 'var(--ink-faint)' }}>
+                      {i + 1}.
+                    </span>
+                    <span style={{ color: 'var(--ink-muted)' }}>{s}</span>
+                  </li>
+                ))}
+              </ol>
+              <button
+                onClick={() => setPhase({ kind: 'choosing' })}
+                className="grain-btn mt-8 px-6 py-3 rounded-full text-base font-medium"
+              >
+                Try again
+              </button>
             </div>
           )}
 
