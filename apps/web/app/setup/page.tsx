@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPasskeyWithPrfOutput, isMeraError } from '@category-labs/mera';
 import { Header, Footer } from '../components/Chrome';
-import { checkPasskeySupport, prfAdvice } from '../lib/passkey-support';
+import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 
 /**
  * Demo-machine check (SPEC.md §9.2).
@@ -32,15 +32,17 @@ export default function Setup() {
     void (async () => {
       const secure = typeof window !== 'undefined' && window.isSecureContext;
       const webauthn = typeof window !== 'undefined' && !!window.PublicKeyCredential;
-      const support = await checkPasskeySupport();
+      await checkPasskeySupport();
+      const builtIn = await hasBuiltInAuthenticator();
       setChecks([
         { label: 'Secure connection', state: secure ? 'pass' : 'fail',
           detail: secure ? location.origin : 'PRF requires https or localhost' },
         { label: 'WebAuthn available', state: webauthn ? 'pass' : 'fail' },
         {
-          label: 'Biometric or device unlock',
-          state: support.ok || support.reason !== 'no-platform-authenticator' ? 'pass' : 'fail',
-          detail: support.ok ? undefined : support.message,
+          label: 'Built-in Touch ID, Face ID or Windows Hello',
+          // Not a failure: a phone, 1Password or a security key all still work.
+          state: builtIn ? 'pass' : 'pending',
+          detail: builtIn ? undefined : 'None on this device — use your phone, 1Password, or a security key instead',
         },
       ]);
     })();

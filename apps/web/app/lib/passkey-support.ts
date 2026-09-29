@@ -14,7 +14,19 @@
 
 export type PasskeySupport =
   | { ok: true }
-  | { ok: false; reason: 'no-webauthn' | 'insecure-context' | 'no-platform-authenticator'; message: string };
+  | { ok: false; reason: 'no-webauthn' | 'insecure-context'; message: string };
+
+/**
+ * Whether this device has its own biometric or device unlock. Informational
+ * only: it decides the button label, never whether registration may proceed.
+ */
+export async function hasBuiltInAuthenticator(): Promise<boolean> {
+  try {
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
+}
 
 export async function checkPasskeySupport(): Promise<PasskeySupport> {
   if (typeof window === 'undefined' || !window.PublicKeyCredential) {
@@ -35,21 +47,11 @@ export async function checkPasskeySupport(): Promise<PasskeySupport> {
     };
   }
 
-  try {
-    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    if (!available) {
-      return {
-        ok: false,
-        reason: 'no-platform-authenticator',
-        message:
-          "This device doesn't have Face ID, Touch ID or Windows Hello set up. Add one, or use a password manager like 1Password.",
-      };
-    }
-  } catch {
-    // An older browser that cannot answer; let the real attempt decide.
-    return { ok: true };
-  }
-
+  // NOT a gate on a built-in biometric. A machine without Touch ID or Face ID
+  // can still use a phone (scan a QR code), a password manager like 1Password,
+  // or a hardware security key. Blocking on the platform authenticator would
+  // turn away exactly the people those alternatives exist for -- including the
+  // machine this was first tested on.
   return { ok: true };
 }
 

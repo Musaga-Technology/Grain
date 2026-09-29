@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { createWalletClient, custom, http, bytesToHex, type Hex } from 'viem';
 import {
@@ -9,7 +9,7 @@ import {
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
 import { identitySession, PasskeyUnavailable, storedCredential } from '../lib/mera';
-import { checkPasskeySupport, prfAdvice } from '../lib/passkey-support';
+import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 import { monadTestnet, CONTRACTS, registryAbi } from '../lib/chain';
 
 /**
@@ -39,6 +39,23 @@ type Phase =
 export default function Register() {
   const [phase, setPhase] = useState<Phase>({ kind: 'choosing' });
   const [title, setTitle] = useState('');
+  const [buttonLabel, setButtonLabel] = useState('Register with your passkey');
+
+  /*
+   * Name the prompt the person is about to see (UX_SPEC /register). Promising
+   * Face ID on a machine without it is a small lie that makes the real prompt
+   * -- a QR code, a password manager -- look like something went wrong.
+   */
+  useEffect(() => {
+    void hasBuiltInAuthenticator().then((builtIn) => {
+      if (!builtIn) return; // keep the generic label
+      const ua = navigator.userAgent;
+      if (/iPhone|iPad/.test(ua)) setButtonLabel('Register with Face ID');
+      else if (/Mac/.test(ua)) setButtonLabel('Register with Touch ID');
+      else if (/Windows/.test(ua)) setButtonLabel('Register with Windows Hello');
+      else if (/Android/.test(ua)) setButtonLabel('Register with your fingerprint');
+    });
+  }, []);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const choose = useCallback(async (file: File) => {
@@ -210,7 +227,7 @@ export default function Register() {
                 onClick={() => void register(phase.file, phase.preview)}
                 className="grain-btn mt-7 w-full rounded-full px-6 py-4 text-base font-medium"
               >
-                Register with Face ID
+                {buttonLabel}
               </button>
             </div>
           )}
