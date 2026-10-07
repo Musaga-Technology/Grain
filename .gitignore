@@ -54,3 +54,8 @@ fixtures/sources/screenshot-*.png
 
 # Rust build artifacts
 target/
+
+# Vercel link state
+.vercel/
+.vercel
+.env*

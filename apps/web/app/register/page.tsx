@@ -8,7 +8,7 @@ import {
   aspectRatioWarning,
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
-import { identitySession, PasskeyUnavailable, storedCredential } from '../lib/mera';
+import { identitySession, deviceSession, PasskeyUnavailable, storedCredential, type Session } from '../lib/mera';
 import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 import { monadTestnet, CONTRACTS, registryAbi } from '../lib/chain';
 
@@ -34,7 +34,7 @@ type Phase =
   | { kind: 'working'; message: string; preview: string }
   | { kind: 'done'; recordId: string; preview: string; filename: string }
   | { kind: 'error'; message: string; preview?: string }
-  | { kind: 'passkey-blocked'; headline: string; steps: string[]; preview: string };
+  | { kind: 'passkey-blocked'; headline: string; steps: string[]; preview: string; file: File };
 
 export default function Register() {
   const [phase, setPhase] = useState<Phase>({ kind: 'choosing' });
@@ -72,8 +72,19 @@ export default function Register() {
     setPhase({ kind: 'ready', file, preview, wideRatio });
   }, []);
 
-  const register = useCallback(async (file: File, preview: string) => {
+  const register = useCallback(async (file: File, preview: string, useDeviceKey = false) => {
     const step = (message: string) => setPhase({ kind: 'working', message, preview });
+
+    let session: Session;
+    if (useDeviceKey) {
+      try {
+        step('Setting up a key in this browser');
+        session = await deviceSession();
+      } catch (e) {
+        setPhase({ kind: 'error', message: (e as Error).message, preview });
+        return;
+      }
+    } else {
 
     // Checked BEFORE the ceremony. Mera creates the passkey first and evaluates
     // PRF second, and a failure after creation strands a credential on the
@@ -84,7 +95,6 @@ export default function Register() {
       return;
     }
 
-    let session;
     try {
       step(storedCredential() ? 'Waiting for your passkey' : 'Creating your passkey');
       // The only authentication step in the product. No seed phrase, no wallet
@@ -95,7 +105,7 @@ export default function Register() {
         // Not a dead end: on desktop Chrome the passkey is fine, it is where
         // Chrome saved it that breaks PRF, and that is fixable in place.
         const advice = prfAdvice();
-        setPhase({ kind: 'passkey-blocked', ...advice, preview });
+        setPhase({ kind: 'passkey-blocked', ...advice, preview, file });
         return;
       }
       setPhase({
@@ -104,6 +114,7 @@ export default function Register() {
         preview,
       });
       return;
+    }
     }
 
     try {
@@ -279,6 +290,23 @@ export default function Register() {
               >
                 Try again
               </button>
+
+              {/* Never a dead end. The trade is stated before it is chosen,
+                  not discovered after. */}
+              <div className="mt-10 pt-8 border-t" style={{ borderColor: 'var(--rule)' }}>
+                <p className="font-medium">Or register without a passkey</p>
+                <p className="mt-2 text-[15px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+                  Grain can keep a key in this browser instead. Your image is registered the same way,
+                  but the record stays tied to this browser: you won&rsquo;t be able to manage it from
+                  another device, and clearing this site&rsquo;s data loses it.
+                </p>
+                <button
+                  onClick={() => void register(phase.file, phase.preview, true)}
+                  className="mt-5 text-base underline underline-offset-4"
+                >
+                  Use this browser instead
+                </button>
+              </div>
             </div>
           )}
 

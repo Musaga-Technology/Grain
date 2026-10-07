@@ -193,3 +193,49 @@ export async function encryptPrivateFields(fields: Record<string, unknown>): Pro
   out.set(iv); out.set(ct, iv.length);
   return bytesToHex(out);
 }
+
+/**
+ * FALLBACK FOR DEVICES THAT CANNOT DO PRF.
+ *
+ * Without PRF a passkey yields no secret, so there is nothing to derive an
+ * account from. The alternative is a key generated here and kept in this
+ * browser. It goes through the same BIP-39 and HD path as the passkey route, so
+ * the account is an ordinary EOA either way and the registry cannot tell them
+ * apart.
+ *
+ * What it gives up, and the UI must say so before anyone chooses it:
+ *  - the identity lives in this browser only; another device cannot recover it
+ *  - clearing site data destroys it, and records registered with it can no
+ *    longer be superseded or revoked
+ *  - the key sits in localStorage, readable by any script running on this
+ *    origin, where a passkey's secret never leaves the authenticator
+ *
+ * On testnet, where nothing has value, that is a far better outcome than
+ * registration dead-ending for every visitor whose browser lacks PRF. On
+ * mainnet it would need rethinking.
+ */
+const DEVICE_KEY = 'grain.devicekey.v1';
+
+export function hasDeviceKey(): boolean {
+  try { return localStorage.getItem(DEVICE_KEY) !== null; } catch { return false; }
+}
+
+export async function deviceSession(): Promise<Session> {
+  let hex: string | null = null;
+  try { hex = localStorage.getItem(DEVICE_KEY); } catch { /* private browsing */ }
+
+  let entropy: Uint8Array;
+  if (hex && /^[0-9a-f]{64}$/.test(hex)) {
+    entropy = new Uint8Array(hex.match(/../g)!.map((b) => parseInt(b, 16)));
+  } else {
+    entropy = crypto.getRandomValues(new Uint8Array(32));
+    try {
+      localStorage.setItem(DEVICE_KEY, [...entropy].map((b) => b.toString(16).padStart(2, '0')).join(''));
+    } catch {
+      throw new Error('This browser is blocking storage, so Grain cannot keep a key here.');
+    }
+  }
+
+  const account = accountFrom(entropy, 0);
+  return { account, end: () => entropy.fill(0) };
+}

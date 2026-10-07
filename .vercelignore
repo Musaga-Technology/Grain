@@ -1,0 +1,16 @@
+# The web app needs apps/web, packages/grain-core and deployments. Everything
+# heavy stays out: the models and binaries are 95 MB and belong to the resolver
+# container, and the corpus and fixtures are never redistributed.
+.tools/
+.corpus/
+.corpus-seeded.json
+fixtures/
+packages/trustmarkd/
+packages/contracts/
+packages/indexer/
+packages/resolver/
+**/target/
+**/node_modules/
+**/.next/
+.env
+.env.*
