@@ -58,8 +58,10 @@ export async function POST(req: Request) {
     return Response.json({ error: 'invalid address' }, { status: 400 });
   }
 
-  const rpc = process.env.RPC_TESTNET_ENDPOINT;
-  const key = process.env.PRIVATE_KEY;
+  // A dedicated faucet wallet with a deliberately small balance, never the
+  // deployer: if this public endpoint is drained, the faucet is all that goes.
+  const rpc = process.env.RPC_TESTNET_ENDPOINT ?? process.env.NEXT_PUBLIC_RPC_URL;
+  const key = process.env.FAUCET_PRIVATE_KEY;
   if (!rpc || !key) return Response.json({ error: 'server not configured' }, { status: 500 });
 
   const transport = http(rpc);

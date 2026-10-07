@@ -9,7 +9,7 @@ these measurements. Do not guess them.
 | Item | Value |
 |---|---|
 | TrustMark variant | Q (default, PSNR 43-45 dB) |
-| TrustMark encoding | **BCH_SUPER** — see below |
+| TrustMark encoding | **BCH_5** — see below; corrected from BCH_SUPER |
 | **Usable payload bits** | **40** → `MAX_RECORD_ID = 2^40 - 1 = 1,099,511,627,775` |
 | `WM_STRENGTH` | _highest value with no visible ripple, by eye — NOT YET MEASURED_ |
 | Encode implementation | TrustMark Rust crate 0.2.2 (`ort` ONNX runtime) |
@@ -24,14 +24,41 @@ Total payload is 100 bits, of which 4 encode the version:
 
 | Version | Data bits | ECC bits | Correctable bit flips |
 |---|---|---|---|
-| **BCH_SUPER** | **40** | 56 | **8** |
-| BCH_5 | 61 | 35 | 5 |
+| BCH_SUPER | 40 | 56 | 8 |
+| **BCH_5** | **61** | 35 | **5** |
 | BCH_4 | 68 | 28 | 4 |
 | BCH_3 | 75 | 21 | 3 |
 
-**BCH_SUPER is chosen.** A recordId needs nowhere near 40 bits at any plausible
-scale — 2^40 is 1.1 trillion — so capacity is not the scarce resource and
-robustness is. BCH_SUPER corrects 8 bit flips against BCH_5's 5.
+**BCH_5 ships — corrected 7 Oct.** This section originally chose BCH_SUPER for
+its 8-flip correction, and that was wrong on two counts.
+
+*What was actually measured.* The matrix below was produced with Adobe's Rust
+CLI, whose `--help` says it defaults to BchSuper. Its source says otherwise —
+`version.unwrap_or(Version::Bch5)` — and its decode output was 61 bits long,
+BCH_5's width, which should have been caught on 21 Sep. **Every watermark number
+in this document is a BCH_5 number.**
+
+*Why BCH_5 is the right choice anyway.* Adobe's three TrustMark implementations
+do not agree on BCH_SUPER. Checked against Adobe's Python reference
+(`trustmark` 0.9.2, `datalayer.py` and `bchecc.py`):
+
+| Implementation | BCH_SUPER parity for recordId 777 |
+|---|---|
+| Python reference | `01111111110000101100110010101100…` |
+| Adobe's JS library | `01111111110000101100110010101100…` — identical |
+| Rust crate 0.2.2 | `11011011101001101100001111010101…` — differs |
+
+The Rust port diverges twice: it pads 40 data bits to 6 bytes where Python uses
+5 (`8 - n % 8` is 8 when `n % 8` is 0), and its leftover-byte loop drops
+Python's `pidx += 1`, reusing one table entry for every word. Both only matter
+when data leaves bytes over after whole 32-bit words. BCH_SUPER's 40 bits do;
+BCH_5's 61 bits fill 8 bytes exactly. So a BCH_SUPER mark from Python or JS
+cannot be read by the Rust crate and vice versa, while **BCH_5 reads identically
+in all three** — confirmed: Grain's browser encoder produces BCH_5 codewords
+bit-identical to the Python reference, and the Rust CLI reads them.
+
+A soft binding only some decoders can read is not much of a soft binding, so
+interoperability wins over the extra three flips of correction.
 
 Consequence for the registry: `recordId` is a `uint64` on chain, but only the
 low 40 bits fit in a watermark. Registration must refuse to issue a watermark
@@ -47,7 +74,7 @@ TrustMark Rust crate 0.2.2, release build, Intel Mac (macOS 13.7, x86_64).
 |---|---|
 | Encode, 512×512 PNG | ~1.8 s |
 | Decode, 512×512 PNG | ~1.0 s |
-| CLI default BCH version | `BchSuper` — matches our choice |
+| CLI default BCH version | **`Bch5`** — the `--help` text claims BchSuper; the source does not |
 
 `MAX_RECORD_ID` confirmed empirically, not just read from source. recordIds
 `1`, `12345`, `2^40 - 2` and `2^40 - 1` all encode and decode back exactly.
@@ -183,7 +210,7 @@ budget. An earlier single-image measurement suggested 2 bits was typical; over
 |---|---|---|
 | `MATCH_THRESHOLD` | **7** | Unchanged. Cannot go higher — the 8x8 band geometry only guarantees recall to 7. |
 | `TAMPER_THRESHOLD` | **16** (was 12) | See below. |
-| `MAX_RECORD_ID` | **2^40 - 1** | BCH_SUPER payload width. |
+| `MAX_RECORD_ID` | **2^40 - 1** | Grain writes 40 bits into BCH_5's 61, zeros after, so its marks are distinguishable from other TrustMark payloads. |
 
 ### TAMPER_THRESHOLD raised from 12 to 16
 

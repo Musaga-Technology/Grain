@@ -69,10 +69,11 @@ impl Response {
 fn main() -> io::Result<()> {
     let models = std::env::args().nth(1).unwrap_or_else(|| ".tools/models".to_string());
 
-    // Variant Q per SPEC 5.2, BCH_SUPER per the Milestone 0 measurement: 40
-    // data bits is far more than a recordId needs, and it corrects 8 bit flips
-    // against BCH_5's 5. Robustness is the scarce resource, capacity is not.
-    let tm = match Trustmark::new(PathBuf::from(&models), Variant::Q, Version::BchSuper) {
+    // Variant Q per SPEC 5.2. BCH_5 rather than BCH_SUPER because this crate's
+    // BCH_SUPER parity disagrees with Adobe's Python reference (it pads 40 bits
+    // to 6 bytes and drops a `pidx += 1`), so its BCH_SUPER marks only this
+    // crate can read. BCH_5 reads identically in every implementation.
+    let tm = match Trustmark::new(PathBuf::from(&models), Variant::Q, Version::Bch5) {
         Ok(tm) => tm,
         Err(e) => {
             eprintln!("trustmarkd: failed to load models from {models}: {e}");
@@ -80,7 +81,7 @@ fn main() -> io::Result<()> {
         }
     };
 
-    eprintln!("trustmarkd: ready (variant Q, BCH_SUPER, models at {models})");
+    eprintln!("trustmarkd: ready (variant Q, BCH_5, models at {models})");
 
     let stdin = io::stdin();
     let mut stdout = io::stdout();

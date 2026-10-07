@@ -5,14 +5,13 @@ import {
   isWatermarkable, aspectRatioWarning,
 } from '../src/index.ts';
 
-test('BCH_SUPER trades capacity for error correction, which is the scarce resource', () => {
-  const sup = TRUSTMARK_VERSIONS.BCH_SUPER;
-  for (const [name, v] of Object.entries(TRUSTMARK_VERSIONS)) {
-    if (name === 'BCH_SUPER') continue;
-    assert.ok(sup.dataBits < v.dataBits, `${name} should carry more data than BCH_SUPER`);
-    assert.ok(sup.correctableFlips > v.correctableFlips, `BCH_SUPER should out-correct ${name}`);
-  }
-  assert.equal(TRUSTMARK_VERSION, 'BCH_SUPER');
+test('ships BCH_5: the scheme every Adobe implementation agrees on', () => {
+  // BCH_SUPER corrects more, but Adobe's Rust crate computes its parity
+  // differently from the Python reference. BCH_5's data fills whole 32-bit
+  // words, so no implementation can disagree about it.
+  assert.equal(TRUSTMARK_VERSION, 'BCH_5');
+  assert.equal(TRUSTMARK_VERSIONS.BCH_5.dataBits % 8 === 5, true, '61 bits pad to 8 bytes, two whole words');
+  assert.ok(TRUSTMARK_VERSIONS.BCH_5.dataBits >= 40, 'a 40-bit recordId must fit');
 });
 
 test('every version accounts for all 100 payload bits (4 of them the version tag)', () => {
@@ -21,9 +20,9 @@ test('every version accounts for all 100 payload bits (4 of them the version tag
   }
 });
 
-test('MAX_RECORD_ID is the 40-bit ceiling BCH_SUPER can carry', () => {
+test('MAX_RECORD_ID is the 40-bit ceiling Grain writes', () => {
   assert.equal(MAX_RECORD_ID, 1099511627775n);
-  assert.equal(MAX_RECORD_ID, (1n << BigInt(TRUSTMARK_VERSIONS.BCH_SUPER.dataBits)) - 1n);
+  assert.equal(MAX_RECORD_ID, (1n << 40n) - 1n);
 });
 
 test('recordIds outside the watermarkable range are refused', () => {
