@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Header, Footer } from './components/Chrome';
 import { Prefetch } from './components/Prefetch';
+import { HeroDemo } from './components/HeroDemo';
+import { RecordCard } from './components/RecordCard';
 
 /**
  * Landing page.
@@ -61,9 +63,8 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grain-rise grain-delay-2 flex justify-center md:justify-end">
-            <Image src="/illustrations/data.svg" alt="" width={460} height={400} priority
-                   className="grain-float w-full max-w-sm md:max-w-md h-auto" />
+          <div className="grain-rise grain-delay-2 pb-10 md:pb-0 px-4 md:px-0">
+            <HeroDemo />
           </div>
         </section>
 
@@ -89,8 +90,7 @@ export default function Landing() {
         </section>
 
         <section className="mx-auto max-w-5xl px-5 py-16 sm:py-20 grid gap-10 md:grid-cols-2 md:items-center">
-          <Image src="/illustrations/invoice.svg" alt="" width={420} height={340}
-                 className="w-full max-w-xs h-auto mx-auto md:mx-0" />
+          <RecordCard />
           <div>
             <h2 style={{ fontFamily: 'var(--serif)' }} className="text-2xl sm:text-3xl">
               Nobody can delete your record
