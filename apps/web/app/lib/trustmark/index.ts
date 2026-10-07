@@ -145,13 +145,24 @@ let local: ModelBytes = {};
 /** For tests and offline use: supply model bytes instead of fetching them. */
 export function useModelBytes(bytes: ModelBytes) { local = bytes; }
 
+const ready = new Set<string>();
+
 function session(name: 'encoder' | 'decoder' | 'resizer'): Promise<ort.InferenceSession> {
   configureWasm();
   const file = name === 'resizer' ? 'resizer.onnx' : `${name}_Q.onnx`;
   sessions[name] ??= ort.InferenceSession.create(
     (local[name] ?? `${MODEL_BASE}${file}`) as never, SESSION_OPTS,
-  );
+  ).then((s) => { ready.add(name); return s; });
   return sessions[name]!;
+}
+
+/**
+ * Whether watermark decoding can answer right now. On a first visit the 45 MB
+ * decoder may still be downloading, and the fingerprint path should not wait
+ * for it -- see resolveProgressive.
+ */
+export function decoderReady(): boolean {
+  return ready.has('decoder') && ready.has('resizer');
 }
 
 /**

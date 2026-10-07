@@ -8,7 +8,7 @@ import { Progress } from '../components/Progress';
 import type { Resolution, ResolveExtras } from '../lib/types';
 import { createPublicClient, http } from 'viem';
 import { CONTRACTS, indexAbi } from '../lib/chain';
-import { resolveImage } from '../lib/resolve-client';
+import { resolveProgressive } from '../lib/resolve-client';
 import { prefetch } from '../lib/trustmark';
 
 /**
@@ -28,7 +28,7 @@ const ACCEPTED = ['image/png', 'image/jpeg'];
 type Phase =
   | { kind: 'idle' }
   | { kind: 'working'; step: number; slow: boolean; preview: string }
-  | { kind: 'done'; result: Resolution; extras: ResolveExtras; preview: string }
+  | { kind: 'done'; result: Resolution; extras: ResolveExtras; preview: string; watermarkPending?: boolean }
   | { kind: 'error'; message: string };
 
 export default function Verify() {
@@ -76,18 +76,21 @@ export default function Verify() {
           preview,
         });
       } else {
-        // In-browser: nothing is uploaded.
-        const local = await resolveImage(file);
-        const result = JSON.parse(JSON.stringify(local.resolution,
-          (_, v) => (typeof v === 'bigint' ? v.toString() : v))) as Resolution;
-        setPhase({
-          kind: 'done',
-          result,
-          extras: {
-            queryFingerprint: `0x${local.queryFingerprint.toString(16).padStart(16, '0')}`,
-            candidatesExamined: local.candidatesExamined,
-          },
-          preview,
+        // In-browser: nothing is uploaded. May report twice -- see resolveProgressive.
+        await resolveProgressive(file, (u) => {
+          const result = JSON.parse(JSON.stringify(u.resolution,
+            (_, v) => (typeof v === 'bigint' ? v.toString() : v))) as Resolution;
+          setChainDistance(null);
+          setPhase({
+            kind: 'done',
+            result,
+            extras: {
+              queryFingerprint: `0x${u.queryFingerprint.toString(16).padStart(16, '0')}`,
+              candidatesExamined: u.candidatesExamined,
+            },
+            preview,
+            watermarkPending: u.watermarkPending,
+          });
         });
       }
     } catch {
@@ -239,7 +242,16 @@ export default function Verify() {
                     }}
                   />
                 </figure>
-                <Result result={phase.result} onVerifyOnChain={verifyOnChain} chainDistance={chainDistance} />
+                <div>
+                  <Result result={phase.result} onVerifyOnChain={verifyOnChain} chainDistance={chainDistance} />
+                  {phase.watermarkPending && (
+                    // Honest about what is still running: this answer came from
+                    // the picture alone, and the watermark check can change it.
+                    <p className="grain-pulse px-6 -mt-4 text-sm" style={{ color: 'var(--ink-faint)' }}>
+                      Still checking for a hidden watermark — the first check on a new device takes a little longer.
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="mt-10 text-center">
                 <button onClick={reset} className="text-sm underline underline-offset-4"

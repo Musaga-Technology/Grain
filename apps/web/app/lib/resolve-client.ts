@@ -6,7 +6,7 @@ import {
   type Resolution, type ResolvedRecord,
 } from '@grain/core';
 import { CONTRACTS, monadTestnet } from './chain';
-import { decodeWatermark } from './trustmark';
+import { decodeWatermark, decoderReady } from './trustmark';
 import { handleOf } from './creators';
 
 /**
@@ -112,6 +112,52 @@ export async function resolveImage(file: File): Promise<LocalResolution> {
     candidatesExamined: cands.length,
     watermarkFound: watermarkRecord !== null,
   };
+}
+
+export interface Update extends LocalResolution {
+  /** True while the watermark check is still running and may change the answer. */
+  watermarkPending: boolean;
+}
+
+/**
+ * Both paths, without making a first-time visitor wait on a download.
+ *
+ * The fingerprint path needs no model and answers in about two seconds. The
+ * watermark path needs a 45 MB decoder, which on a first visit can take
+ * twenty seconds or more to arrive. So when the decoder is already loaded this
+ * waits for both, exactly like resolveImage; when it is not, it reports the
+ * fingerprint answer at once, marked pending, and reports again when the
+ * watermark lands.
+ *
+ * The second answer can differ from the first, and that is the point. An
+ * unregistered image carrying someone else's mark reads "no record" by content
+ * and TAMPERED once the mark is decoded. Saying the check is still running is
+ * honest; holding the page for twenty seconds is not acceptable at the front
+ * door.
+ */
+export async function resolveProgressive(file: File, onUpdate: (u: Update) => void): Promise<void> {
+  const img = decodeImage(new Uint8Array(await file.arrayBuffer()));
+  const queryFingerprint = fingerprint(img);
+  const warm = decoderReady();
+  const markP = decodeWatermark(img);
+  const cands = await candidates(queryFingerprint);
+
+  const settle = async (mark: Awaited<typeof markP> | null, pending: boolean) => {
+    const watermarkRecord = mark ? await readRecord(mark.recordId).catch(() => null) : null;
+    const resolution = resolve({ queryFingerprint, watermarkRecord, candidates: cands });
+    await attachHandles(resolution);
+    onUpdate({ resolution, queryFingerprint, candidatesExamined: cands.length,
+               watermarkFound: watermarkRecord !== null, watermarkPending: pending });
+  };
+
+  if (warm) return settle(await markP, false);
+
+  // Give a decoder that is nearly there a moment before answering without it.
+  const quick = await Promise.race([markP.then((m) => ({ m })), new Promise<null>((r) => setTimeout(() => r(null), 2500))]);
+  if (quick) return settle(quick.m, false);
+
+  await settle(null, true);
+  await settle(await markP, false);
 }
 
 export async function nextRecordId(): Promise<bigint> {

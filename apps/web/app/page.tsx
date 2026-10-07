@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header, Footer } from './components/Chrome';
+import { Prefetch } from './components/Prefetch';
 
 /**
  * Landing page.
@@ -32,6 +33,7 @@ const STEPS = [
 export default function Landing() {
   return (
     <div className="min-h-dvh flex flex-col">
+      <Prefetch which="verify" />
       <Header />
 
       <main className="flex-1">
