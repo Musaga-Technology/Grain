@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createPublicClient, http, parseAbi } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
-import { CONTRACTS } from '../../lib/chain';
+import { CONTRACTS, creatorAbi } from '../../lib/chain';
 
 /**
  * A permanent, shareable record page.
@@ -26,7 +26,10 @@ async function loadRecord(recordId: string) {
       args: [BigInt(recordId)],
     });
     if (r.creator === '0x0000000000000000000000000000000000000000') return null;
-    return r;
+    const profile = await client.readContract({
+      address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'creators', args: [r.creator],
+    }).catch(() => null);
+    return { ...r, handle: profile?.handle || undefined };
   } catch {
     return null;
   }
@@ -34,8 +37,12 @@ async function loadRecord(recordId: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ recordId: string }> }): Promise<Metadata> {
   const { recordId } = await params;
-  const title = `Record ${recordId} · Grain`;
-  const description = 'A registered image on Grain, the open provenance registry.';
+  const record = await loadRecord(recordId);
+  const who = record?.handle ? `@${record.handle}` : 'an unnamed creator';
+  const title = record ? `Made by ${who} · Grain` : `Record ${recordId} · Grain`;
+  const description = record
+    ? `Record ${recordId} on Grain, the open provenance registry. Anyone can check it against the chain.`
+    : 'A registered image on Grain, the open provenance registry.';
   return { title, description, openGraph: { title, description, type: 'article' } };
 }
 
@@ -77,7 +84,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
               Made by{' '}
               {/* Name the human, not the address. Fall back to a label rather
                   than showing 0x1234 as if it were a name. */}
-              <span className="whitespace-nowrap">an unnamed creator</span>
+              <span className="whitespace-nowrap">{record.handle ? `@${record.handle}` : 'an unnamed creator'}</span>
             </h1>
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
               registered {relativeTime(Number(record.registeredAt))}

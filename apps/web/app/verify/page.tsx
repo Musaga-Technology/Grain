@@ -8,7 +8,8 @@ import { Progress } from '../components/Progress';
 import type { Resolution, ResolveExtras } from '../lib/types';
 import { createPublicClient, http } from 'viem';
 import { CONTRACTS, indexAbi } from '../lib/chain';
-import { resolveLocally } from '../lib/resolve-client';
+import { resolveImage } from '../lib/resolve-client';
+import { prefetch } from '../lib/trustmark';
 
 /**
  * When a resolver is configured, it runs both paths server-side. When it is not
@@ -34,6 +35,14 @@ export default function Verify() {
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [dragging, setDragging] = useState(false);
   const [chainDistance, setChainDistance] = useState<number | null>(null);
+  // Resolved after mount: the server cannot know the platform, and rendering a
+  // guess there made the hydrated text disagree with the server's.
+  const [pasteKey, setPasteKey] = useState('Ctrl+V');
+  useEffect(() => { setPasteKey(navigatorKey()); }, []);
+
+  // The watermark decoder is 45 MB. Start fetching it the moment someone
+  // arrives, so it is usually ready by the time they have chosen an image.
+  useEffect(() => { if (!RESOLVER) prefetch('verify'); }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
 
@@ -68,7 +77,7 @@ export default function Verify() {
         });
       } else {
         // In-browser: nothing is uploaded.
-        const local = await resolveLocally(file);
+        const local = await resolveImage(file);
         const result = JSON.parse(JSON.stringify(local.resolution,
           (_, v) => (typeof v === 'bigint' ? v.toString() : v))) as Resolution;
         setPhase({
@@ -203,7 +212,7 @@ export default function Verify() {
                        className="h-24 w-auto" />
                 <span className="text-base font-medium">Drop an image here, or click to choose</span>
                 <span className="text-sm" style={{ color: 'var(--ink-faint)' }}>
-                  You can also paste one with {navigatorKey()}
+                  You can also paste one with {pasteKey}
                 </span>
               </button>
 
@@ -217,7 +226,21 @@ export default function Verify() {
 
           {phase.kind === 'done' && (
             <>
-              <Result result={phase.result} onVerifyOnChain={verifyOnChain} chainDistance={chainDistance} />
+              {/* The picture beside the answer: the whole product in one glance. */}
+              <div className="w-full max-w-5xl mx-auto grid gap-2 md:gap-6 md:grid-cols-2 md:items-center px-1">
+                <figure className="grain-rise px-6 md:px-0">
+                  <img
+                    src={phase.preview}
+                    alt="The image you checked"
+                    className="w-full max-h-[55vh] object-contain rounded-lg border"
+                    style={{
+                      borderColor: phase.result.state === 'TAMPERED' ? 'var(--accent)' : 'var(--rule)',
+                      background: 'var(--surface)',
+                    }}
+                  />
+                </figure>
+                <Result result={phase.result} onVerifyOnChain={verifyOnChain} chainDistance={chainDistance} />
+              </div>
               <div className="mt-10 text-center">
                 <button onClick={reset} className="text-sm underline underline-offset-4"
                         style={{ color: 'var(--ink-faint)' }}>

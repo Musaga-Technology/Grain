@@ -2,15 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { createWalletClient, custom, http, bytesToHex, type Hex } from 'viem';
+import { createWalletClient, createPublicClient, http, bytesToHex, type Hex } from 'viem';
 import {
-  decodeImage, fingerprint, buildManifest, signManifestWith, encodeSignedManifest,
+  decodeImage, fingerprint, buildManifest, signManifestWith, encodeSignedManifest, encodePNG,
   aspectRatioWarning,
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
 import { identitySession, deviceSession, PasskeyUnavailable, storedCredential, type Session } from '../lib/mera';
 import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
-import { monadTestnet, CONTRACTS, registryAbi } from '../lib/chain';
+import { monadTestnet, CONTRACTS, registryAbi, creatorAbi } from '../lib/chain';
+import { handleOf, toHandle, availableHandle } from '../lib/creators';
+import { encodeWatermark, canWatermark, prefetch } from '../lib/trustmark';
+import { nextRecordId } from '../lib/resolve-client';
 
 /**
  * Register an image.
@@ -26,20 +29,29 @@ import { monadTestnet, CONTRACTS, registryAbi } from '../lib/chain';
  * register.
  */
 
-const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
+/** PNG and JPEG: grain-core owns both decoders, so the fingerprint is the same everywhere. */
+const ACCEPTED = ['image/png', 'image/jpeg'];
 
 type Phase =
   | { kind: 'choosing' }
   | { kind: 'ready'; file: File; preview: string; wideRatio: boolean }
   | { kind: 'working'; message: string; preview: string }
-  | { kind: 'done'; recordId: string; preview: string; filename: string }
+  | { kind: 'done'; recordId: string; preview: string; filename: string; handle?: string }
   | { kind: 'error'; message: string; preview?: string }
   | { kind: 'passkey-blocked'; headline: string; steps: string[]; preview: string; file: File };
 
 export default function Register() {
   const [phase, setPhase] = useState<Phase>({ kind: 'choosing' });
   const [title, setTitle] = useState('');
+  const [name, setName] = useState('');
+  // Asked once. A returning creator already has a name on chain, and the app
+  // knows which visit this is without asking (UX_SPEC /register).
+  const [firstVisit, setFirstVisit] = useState(true);
+  useEffect(() => { setFirstVisit(!storedCredential()); }, []);
   const [buttonLabel, setButtonLabel] = useState('Register with your passkey');
+
+  // The encoder is 17 MB; fetch it while the person is still choosing.
+  useEffect(() => { prefetch('register'); }, []);
 
   /*
    * Name the prompt the person is about to see (UX_SPEC /register). Promising
@@ -128,16 +140,20 @@ export default function Register() {
       });
 
       step('Adding the invisible mark');
-      const form = new FormData();
-      form.append('image', file);
-      const marked = await fetch('/api/prepare', { method: 'POST', body: form });
-      if (!marked.ok) throw new Error('prepare failed');
-
-      const recordId = BigInt(marked.headers.get('x-grain-record-id') ?? '0');
-      const markedBytes = new Uint8Array(await marked.arrayBuffer());
+      // Done here, in the browser: the image never leaves the device. The id is
+      // read first because the watermark carries it; register() takes it as
+      // expectedRecordId and reverts if another registration landed first,
+      // rather than binding this mark to someone else's record.
+      const original = decodeImage(new Uint8Array(await file.arrayBuffer()));
+      const recordId = await nextRecordId();
+      const watermarked = canWatermark(original);
+      const markedImage = watermarked ? await encodeWatermark(original, recordId) : original;
+      const markedBytes = encodePNG(markedImage);
 
       step('Fingerprinting your image');
-      const fp = fingerprint(decodeImage(markedBytes));
+      // The fingerprint of the MARKED image, since that is the copy people will
+      // publish and the one the anti-spoof check compares against.
+      const fp = fingerprint(markedImage);
 
       step('Signing');
       const manifest = await signManifestWith(
@@ -147,22 +163,53 @@ export default function Register() {
           fingerprint: fp,
           title: title || undefined,
           generator: 'Grain Web 0.1.0',
+          // Images past 2:1 are registered by fingerprint alone, and the
+          // manifest says so rather than claiming a mark that is not there.
+          watermarked,
         }),
         session.account,
       );
 
-      step('Recording it');
       const wallet = createWalletClient({
         account: session.account,
         chain: monadTestnet,
         transport: http(process.env.NEXT_PUBLIC_RPC_URL),
       });
-      await wallet.writeContract({
+      const reader = createPublicClient({ chain: monadTestnet, transport: http(process.env.NEXT_PUBLIC_RPC_URL) });
+
+      // The creator's name, once. Non-fatal: a record without a name is still a
+      // record, and a taken handle must not cost someone their registration.
+      let handle = await handleOf(session.account.address);
+      const wanted = name.trim() ? toHandle(name) : null;
+      if (!handle && wanted) {
+        try {
+          step('Saving your name');
+          const chosen = await availableHandle(wanted, session.account.address);
+          const tx = await wallet.writeContract({
+            address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
+            args: [chosen, '', 0n],
+          });
+          const receipt = await reader.waitForTransactionReceipt({ hash: tx });
+          if (receipt.status === 'success') handle = chosen;
+        } catch (e) {
+          console.warn('could not save the creator name', e);
+        }
+      }
+
+      step('Recording it');
+      const hash = await wallet.writeContract({
         address: CONTRACTS.GrainRegistry,
         abi: registryAbi,
         functionName: 'register',
         args: [recordId, fp, bytesToHex(encodeSignedManifest(manifest))],
       });
+      // Confirmed, not just sent. register() reverts if another registration
+      // took this recordId first, and reporting that as success would hand the
+      // person a watermark pointing at someone else's record.
+      const receipt = await reader.waitForTransactionReceipt({ hash });
+      if (receipt.status !== 'success') {
+        throw new Error('registration reverted');
+      }
 
       // THE WATERMARKED FILE DOWNLOADS AUTOMATICALLY. Getting this wrong means
       // people publish the unmarked original and the product silently does not
@@ -173,7 +220,7 @@ export default function Register() {
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
 
-      setPhase({ kind: 'done', recordId: recordId.toString(), preview, filename });
+      setPhase({ kind: 'done', recordId: recordId.toString(), preview, filename, handle });
     } catch (e) {
       console.error(e);
       setPhase({
@@ -184,7 +231,7 @@ export default function Register() {
     } finally {
       session.end();
     }
-  }, [title]);
+  }, [title, name]);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -223,6 +270,26 @@ export default function Register() {
                 </p>
               )}
 
+              {firstVisit && (
+                <label className="block mt-7">
+                  <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Your name</span>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={60}
+                    autoComplete="name"
+                    placeholder="Ana Ruiz"
+                    className="mt-2 w-full rounded-lg px-4 py-3 text-base bg-transparent border"
+                    style={{ borderColor: 'var(--rule)' }}
+                  />
+                  <span className="mt-2 block text-sm" style={{ color: 'var(--ink-faint)' }}>
+                    {toHandle(name)
+                      ? <>Anyone who checks your image will see <span style={{ color: 'var(--ink)' }}>Made by @{toHandle(name)}</span></>
+                      : 'This is how you’ll be credited when someone checks your image.'}
+                  </span>
+                </label>
+              )}
+
               <label className="block mt-7">
                 <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Title (optional)</span>
                 <input
@@ -254,6 +321,11 @@ export default function Register() {
           {phase.kind === 'done' && (
             <div className="grain-rise text-center">
               <h2 style={{ fontFamily: 'var(--serif)' }} className="text-3xl sm:text-4xl">Registered</h2>
+              {phase.handle && (
+                <p className="mt-2 text-base" style={{ color: 'var(--ink-muted)' }}>
+                  as <span style={{ color: 'var(--ink)' }}>@{phase.handle}</span>
+                </p>
+              )}
               <img src={phase.preview} alt="" className="mt-7 w-full rounded-lg border"
                    style={{ borderColor: 'var(--rule)' }} />
               <div className="mt-7 rounded-lg px-5 py-4 text-left" style={{ background: 'var(--brand-soft)' }}>

@@ -1,4 +1,6 @@
-import * as ort from 'onnxruntime-web';
+// The WASM-only build. The default entry point includes WebGPU and ships a
+// 22 MB runtime; the WASM backend this module uses needs the 11 MB one.
+import * as ort from 'onnxruntime-web/wasm';
 import { BCH, BCH_Encode, BCH_Decode } from './bch.js';
 
 /**
@@ -7,16 +9,22 @@ import { BCH, BCH_Encode, BCH_Decode } from './bch.js';
  * Adobe's official JavaScript build only decodes, so registration originally
  * needed a server running the Rust crate -- and that server needs about 1 GB
  * to hold the models, which no free host offers any more. This module runs both
- * directions with onnxruntime-web instead, loading Adobe's own models straight
- * from their CDN (served with `access-control-allow-origin: *`). No server, and
- * the image never leaves the person's device.
+ * directions with onnxruntime-web instead, using Adobe's own models (MIT),
+ * served by this app. No server does the work, and the image never leaves the
+ * person's device.
  *
  * Ported from the Rust crate (adobe/trustmark, rust/src) and checked against
  * it: images this module encodes decode with the Rust CLI, and images the Rust
  * CLI encoded decode here.
  */
 
-const CDN = 'https://cai-watermark.adobe.net/watermarking/trustmark-models/';
+/**
+ * Served from the app's own origin (public/models, placed by
+ * scripts/fetch-web-models.sh). Adobe's CDN works but was slow enough to serve
+ * the 45 MB decoder that real-browser requests failed part-way -- and a failed
+ * response carries no CORS header, so the browser reported it as a CORS block.
+ */
+const MODEL_BASE = process.env.NEXT_PUBLIC_TRUSTMARK_MODELS ?? '/models/';
 const SIZE = 256; // TrustMark Q works at 256x256 regardless of the input size
 
 /** Raw RGBA, row-major. Matches grain-core's RGBAImage. */
@@ -110,9 +118,9 @@ function configureWasm() {
   if (wasmConfigured) return;
   wasmConfigured = true;
   if (typeof window !== 'undefined') {
-    // Serve the runtime from a CDN pinned to the installed version rather than
-    // bundling ~10 MB of WASM into the app.
-    ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+    // Same-origin, like the models: a third-party CDN reset this download
+    // mid-transfer in testing, and the runtime is useless half-loaded.
+    ort.env.wasm.wasmPaths = '/ort/';
     // Threads need cross-origin isolation; without it, one thread is all there is.
     ort.env.wasm.numThreads = (globalThis as { crossOriginIsolated?: boolean }).crossOriginIsolated
       ? Math.min(4, navigator.hardwareConcurrency || 1)
@@ -141,7 +149,7 @@ function session(name: 'encoder' | 'decoder' | 'resizer'): Promise<ort.Inference
   configureWasm();
   const file = name === 'resizer' ? 'resizer.onnx' : `${name}_Q.onnx`;
   sessions[name] ??= ort.InferenceSession.create(
-    (local[name] ?? `${CDN}${file}`) as never, SESSION_OPTS,
+    (local[name] ?? `${MODEL_BASE}${file}`) as never, SESSION_OPTS,
   );
   return sessions[name]!;
 }

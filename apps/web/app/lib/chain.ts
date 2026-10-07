@@ -38,3 +38,29 @@ export const registryAbi = [
     outputs: [{ type: 'uint64' }],
   },
 ] as const;
+
+export const creatorAbi = [
+  {
+    type: 'function', name: 'creators', stateMutability: 'view',
+    inputs: [{ name: 'creator', type: 'address' }],
+    outputs: [{ type: 'tuple', components: [
+      { name: 'handle', type: 'string' },
+      { name: 'profileURI', type: 'string' },
+      { name: 'licensePriceWei', type: 'uint256' },
+    ] }],
+  },
+  {
+    type: 'function', name: 'handleOwner', stateMutability: 'view',
+    inputs: [{ name: 'handleHash', type: 'bytes32' }],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    type: 'function', name: 'setProfile', stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'handle', type: 'string' },
+      { name: 'profileURI', type: 'string' },
+      { name: 'licensePriceWei', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+] as const;

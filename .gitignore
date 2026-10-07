@@ -59,3 +59,8 @@ target/
 .vercel/
 .vercel
 .env*
+
+# TrustMark models, served same-origin by the web app (62 MB). Fetched by
+# scripts/fetch-web-models.sh rather than committed.
+apps/web/public/models/
+apps/web/public/ort/

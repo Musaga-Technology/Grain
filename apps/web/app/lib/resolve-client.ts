@@ -6,6 +6,8 @@ import {
   type Resolution, type ResolvedRecord,
 } from '@grain/core';
 import { CONTRACTS, monadTestnet } from './chain';
+import { decodeWatermark } from './trustmark';
+import { handleOf } from './creators';
 
 /**
  * Resolution, entirely in the browser.
@@ -24,6 +26,7 @@ import { CONTRACTS, monadTestnet } from './chain';
 
 const registryAbi = parseAbi([
   'function records(uint64) view returns ((address creator, uint64 fingerprint, bytes32 manifestHash, uint40 registeredAt, uint64 supersededBy, bool revoked))',
+  'function nextRecordId() view returns (uint64)',
 ]);
 const indexAbi = parseAbi([
   'function queryBand(uint8 band, uint8 value, uint256 offset, uint256 limit) view returns (uint64[])',
@@ -81,24 +84,48 @@ export interface LocalResolution {
   resolution: Resolution;
   queryFingerprint: bigint;
   candidatesExamined: number;
+  watermarkFound: boolean;
 }
 
 /**
- * @param watermarkRecordId  a recordId decoded from the image, if the
- *   watermark path found one. Omitted, this is the fingerprint path alone.
+ * Both paths, in parallel, on every image -- neither is a fallback (SPEC.md §2).
+ * The fingerprint fan-out and the watermark decode share one decoded image and
+ * race each other; resolve() then applies the anti-spoof cross-check, which is
+ * what turns a transferred watermark into TAMPERED rather than a false match.
  */
-export async function resolveLocally(
-  file: File,
-  watermarkRecordId?: bigint | null,
-): Promise<LocalResolution> {
-  const queryFingerprint = await fingerprintFile(file);
-  const [cands, watermarkRecord] = await Promise.all([
+export async function resolveImage(file: File): Promise<LocalResolution> {
+  const img = decodeImage(new Uint8Array(await file.arrayBuffer()));
+  const queryFingerprint = fingerprint(img);
+
+  const [cands, mark] = await Promise.all([
     candidates(queryFingerprint),
-    watermarkRecordId ? readRecord(watermarkRecordId) : Promise.resolve(null),
+    decodeWatermark(img),
   ]);
+  const watermarkRecord = mark ? await readRecord(mark.recordId).catch(() => null) : null;
+
+  const resolution = resolve({ queryFingerprint, watermarkRecord, candidates: cands });
+  await attachHandles(resolution);
+
   return {
-    resolution: resolve({ queryFingerprint, watermarkRecord, candidates: cands }),
+    resolution,
     queryFingerprint,
     candidatesExamined: cands.length,
+    watermarkFound: watermarkRecord !== null,
   };
+}
+
+export async function nextRecordId(): Promise<bigint> {
+  return chain().readContract({
+    address: CONTRACTS.GrainRegistry, abi: registryAbi, functionName: 'nextRecordId',
+  });
+}
+
+/** Name the human, not the address (UX_SPEC copy principles). */
+async function attachHandles(r: Resolution): Promise<void> {
+  const records: ResolvedRecord[] =
+    r.state === 'RESOLVED' ? [r.record]
+    : r.state === 'TAMPERED' ? [r.claimed]
+    : r.state === 'UNCERTAIN' ? r.candidates.slice(0, 1)
+    : [];
+  await Promise.all(records.map(async (rec) => { rec.creatorHandle = await handleOf(rec.creator); }));
 }

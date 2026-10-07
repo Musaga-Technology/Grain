@@ -22,13 +22,14 @@ import { privateKeyToAccount } from 'viem/accounts';
 export const runtime = 'nodejs';
 
 /**
- * A registration costs about 95k gas (docs/GAS.md), which at ~102 gwei is
- * roughly 0.0097 MON. This covers two, and no more: the smaller the grant, the
- * less a drained faucet costs.
+ * A first registration is two transactions: setProfile to record the creator's
+ * name (~107k gas, measured) and register (~95-150k). At ~102 gwei that is about
+ * 0.026 MON. The grant covers that with headroom for a second image, and no
+ * more: the smaller the grant, the less a drained faucet costs.
  */
-const GRANT = parseEther('0.02');
+const GRANT = parseEther('0.05');
 /** Only tops up accounts that genuinely cannot transact. */
-const FLOOR = parseEther('0.01');
+const FLOOR = parseEther('0.03');
 
 /**
  * THIS IS A FAUCET ON A PUBLIC ENDPOINT AND IT CAN BE DRAINED.
