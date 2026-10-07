@@ -16,12 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
 # The daemon depends on Adobe's crate by path, so the source has to be present.
 RUN git clone --depth 1 https://github.com/adobe/trustmark.git /build/trustmark-src
 
-COPY packages/trustmarkd/Cargo.toml packages/trustmarkd/Cargo.lock /build/trustmarkd/
-COPY packages/trustmarkd/src /build/trustmarkd/src
-
-# Match the path dependency's layout: ../../.tools/trustmark-src/rust
+# The daemon's Cargo.toml points at ../../.tools/trustmark-src/rust, relative to
+# packages/trustmarkd. Mirror that layout exactly or cargo cannot find the crate.
+COPY packages/trustmarkd/Cargo.toml packages/trustmarkd/Cargo.lock /build/packages/trustmarkd/
+COPY packages/trustmarkd/src /build/packages/trustmarkd/src
 RUN mkdir -p /build/.tools && ln -s /build/trustmark-src /build/.tools/trustmark-src
-WORKDIR /build/trustmarkd
+WORKDIR /build/packages/trustmarkd
 RUN cargo build --release
 
 # ---------- fetch the models ----------
@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && rm -rf /var/lib/apt/lists/* \
     && corepack enable
 
-COPY --from=rust-build /build/trustmarkd/target/release/trustmarkd /app/bin/trustmarkd
+COPY --from=rust-build /build/packages/trustmarkd/target/release/trustmarkd /app/bin/trustmarkd
 COPY --from=models /models /app/models
 
 COPY pnpm-workspace.yaml package.json ./

@@ -8,9 +8,21 @@ import { Progress } from '../components/Progress';
 import type { Resolution, ResolveExtras } from '../lib/types';
 import { createPublicClient, http } from 'viem';
 import { CONTRACTS, indexAbi } from '../lib/chain';
+import { resolveLocally } from '../lib/resolve-client';
 
-const RESOLVER = process.env.NEXT_PUBLIC_RESOLVER_URL ?? 'http://localhost:8787';
-const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
+/**
+ * When a resolver is configured, it runs both paths server-side. When it is not
+ * -- which is the free production deployment -- the browser runs the
+ * fingerprint path itself (see lib/resolve-client.ts).
+ */
+const RESOLVER = process.env.NEXT_PUBLIC_RESOLVER_URL;
+
+/**
+ * PNG and JPEG only. grain-core owns both decoders so the fingerprint is
+ * identical in every browser; WebP and AVIF would need the platform's decoder,
+ * which is exactly the source of drift the fingerprint is built to avoid.
+ */
+const ACCEPTED = ['image/png', 'image/jpeg'];
 
 type Phase =
   | { kind: 'idle' }
@@ -28,7 +40,7 @@ export default function Verify() {
   const handle = useCallback(async (file: File) => {
     if (!ACCEPTED.includes(file.type)) {
       // Plain language, never a MIME type (UX_SPEC "Input").
-      setPhase({ kind: 'error', message: "That file isn't an image Grain can read. Try a PNG or a JPEG." });
+      setPhase({ kind: 'error', message: "Grain reads PNG and JPEG images. Try saving this one as either." });
       return;
     }
 
@@ -42,17 +54,33 @@ export default function Verify() {
     const toSlow = setTimeout(() => setPhase((p) => (p.kind === 'working' ? { ...p, slow: true } : p)), 4000);
 
     try {
-      const body = new FormData();
-      body.append('image', file);
-      const res = await fetch(`${RESOLVER}/v1/resolve`, { method: 'POST', body });
-      if (!res.ok) throw new Error(String(res.status));
-      const payload = (await res.json()) as Resolution & ResolveExtras;
-      setPhase({
-        kind: 'done',
-        result: payload,
-        extras: { queryFingerprint: payload.queryFingerprint, candidatesExamined: payload.candidatesExamined },
-        preview,
-      });
+      if (RESOLVER) {
+        const body = new FormData();
+        body.append('image', file);
+        const res = await fetch(`${RESOLVER}/v1/resolve`, { method: 'POST', body });
+        if (!res.ok) throw new Error(String(res.status));
+        const payload = (await res.json()) as Resolution & ResolveExtras;
+        setPhase({
+          kind: 'done',
+          result: payload,
+          extras: { queryFingerprint: payload.queryFingerprint, candidatesExamined: payload.candidatesExamined },
+          preview,
+        });
+      } else {
+        // In-browser: nothing is uploaded.
+        const local = await resolveLocally(file);
+        const result = JSON.parse(JSON.stringify(local.resolution,
+          (_, v) => (typeof v === 'bigint' ? v.toString() : v))) as Resolution;
+        setPhase({
+          kind: 'done',
+          result,
+          extras: {
+            queryFingerprint: `0x${local.queryFingerprint.toString(16).padStart(16, '0')}`,
+            candidatesExamined: local.candidatesExamined,
+          },
+          preview,
+        });
+      }
     } catch {
       setPhase({
         kind: 'error',
@@ -180,7 +208,7 @@ export default function Verify() {
               </button>
 
               <p className="mt-5 text-sm" style={{ color: 'var(--ink-faint)' }}>
-                PNG, JPEG, WebP or AVIF. Your image is checked, not published.
+                PNG or JPEG. Your image is checked on your own device and never uploaded.
               </p>
             </div>
           )}
