@@ -1,51 +1,141 @@
 # Grain
 
-**An open, onchain C2PA manifest repository with a soft-binding resolver.**
-Find who made an image from the image itself — after screenshots, crops and re-encoding.
+**An open, onchain C2PA manifest repository. Find out who made an image, from the image itself — after screenshots, crops and re-encoding.**
 
-> **Status: in build.** Monad Metropolis, Track 04. Build window 1 Sep – 13 Oct 2026.
-> This README is a placeholder; the one written for judges lands in Milestone 4 with
-> measured numbers in it. Nothing below is a claim about working software yet.
+**Live:** [grain-rho.vercel.app](https://grain-rho.vercel.app) · Monad testnet · built for [Metropolis](https://monad.xyz/developers/hackathons/metropolis), Track 04
+
+> **Demo video:** _link goes here_
+
+---
 
 ## The gap
 
-C2PA already solved the *format* of content provenance. A Content Credential is a signed
-manifest describing where a piece of media came from — and it gets stripped by every
-screenshot, re-encode and platform that doesn't support the standard.
+C2PA solved the *format* of content provenance: a Content Credential is a signed manifest saying where a piece of media came from. But every screenshot and re-upload strips it. C2PA's answer is the **durable Content Credential** — an invisible watermark or a content fingerprint that survives the copy, looked up through a **Soft Binding Resolution API** in a **Manifest Repository**.
 
-C2PA's answer is the **durable Content Credential**: a soft binding — an invisible
-watermark or a content fingerprint — that survives the copy, plus a **Soft Binding
-Resolution API** for looking the manifest back up inside a **Manifest Repository**.
+The spec defines the lookup. It does not say who runs the repository. Today that is a handful of private companies, and a record can be dropped or lost when one shuts down.
 
-The spec defines the API. It does not say who runs the repository. Today that is Adobe,
-Digimarc or Truepic: the lookup table deciding who made a piece of media is proprietary,
-per-vendor and deletable.
+**Grain is that repository: open, permissionless, on Monad.** Nobody can delete your record, anyone can check an answer against it, and it works for people who have never touched crypto — one passkey prompt, no wallet, no seed phrase.
 
-**Grain is that manifest repository, onchain, permissionless, on Monad.**
+It is **not NFTs.** Records are found *by the content itself*, ten thousand copies of an image resolve to one record, and nothing is minted or traded. There is no ERC-721 anywhere in the project.
 
-## What it is not
+---
 
-Not an NFT. Records are looked up **by the content itself**, not by a token id; ten
-thousand copies of an image resolve to one manifest; nothing is minted, traded or scarce.
-There is no ERC-721 anywhere in this project, including in licensing.
+## How it works
 
-## Conformance, stated honestly
+```mermaid
+flowchart LR
+    A[Image dropped in] --> B[Fingerprint<br/>64-bit DCT hash]
+    A --> C[Watermark decode<br/>TrustMark]
+    B --> D[LSH candidates<br/>read from the chain]
+    C --> E[Record the mark<br/>points to]
+    D --> F{resolve}
+    E --> F
+    F --> G[RESOLVED]
+    F --> H[UNCERTAIN]
+    F --> I[TAMPERED]
+    F --> J[NOT FOUND]
+```
 
-Grain is **C2PA-compatible**, not C2PA-certified. We implement the Soft Binding
-Resolution API shape and the soft binding assertion structure. We do not run the
-`c2pa-rs` signing stack with X.509 certificates from the C2PA trust list.
+**Two co-equal paths, run in parallel on every image.** A TrustMark watermark carries the record id; a perceptual fingerprint finds the record by what the picture looks like. Neither is a fallback — they fail in opposite directions, so each catches what the other drops (measured below).
 
-## Reading order
+**The anti-spoof check.** A watermark payload is not authenticated: anyone can stamp any record id onto any image. So the manifest also stores the fingerprint, and if the mark says one thing and the picture says another, Grain reports **TAMPERED** instead of attributing someone else's work. That is what C2PA's own guidance prescribes.
 
-| Document | What it is |
+**Everything runs in the browser.** Watermarking, fingerprinting and resolution happen on the person's device and the image is never uploaded; the browser reads Monad directly. The only server code is a small faucet that funds a new passkey account's first transactions.
+
+---
+
+## Why Monad
+
+1. **Per-asset registration has to be cheap.** Every photo, edit and republish is a row. Measured: **~93k gas** to register once the index is warm. Manifests live in event data rather than storage, so the 16 KB cap costs only 2.7× a 256 B manifest.
+2. **It has to be fast enough to disappear into a product.** End to end — passkey, watermark, name, confirmed on chain — registration takes **13–15 seconds** in a real browser, most of it watermarking on the device. The chain is not the slow part.
+3. **Anyone can check the answer.** A database can tell you who made an image; it cannot let you verify that without trusting it. `FingerprintIndex.verify()` returns the distance between any record and any image **from the chain itself, for 8,687 gas** — the "verify on chain" link on every result.
+4. **Nobody can retract your provenance**, and block order settles who registered first.
+
+Identity is built on **Mera**, Monad's passkey account layer: a photographer's account is an ordinary EOA derived from their Face ID or fingerprint, and recoverable wherever the passkey syncs. One passkey yields three keys through separate PRF namespaces — a signing identity, unlinkable per-channel keys, and an encryption key for private manifest fields.
+
+---
+
+## Measured, not asserted
+
+### Robustness — 21 real images × 11 transformations
+
+| Transformation | Watermark recovered | Fingerprint distance (median / max) | Resolves |
+|---|---|---|---|
+| None | 100% | 0 / 0 | **100%** |
+| Screenshot | 100% | 0 / 0 | **100%** |
+| JPEG quality 40 | 76% | 0 / 2 | **100%** |
+| JPEG quality 20 | **43%** | 0 / 4 | **100%** |
+| Downscale 50% / 25% | 100% | 0 / 2 | **100%** |
+| Crop 10% | 100% | **12** / 28 | **100%** |
+| Gaussian blur | 100% | 0 / 2 | **100%** |
+| Social filter | 43% | 2 / 8 | 95% |
+| Screenshot + JPEG 40 | 71% | 0 / 2 | **100%** |
+| **Crop 25%** | 19% | 24 / 34 | **19%** |
+
+JPEG 20 defeats the watermark but not the fingerprint; a 10% crop defeats the fingerprint but not the watermark. That is the case for two paths, in one table. **A 25% crop defeats both** — no threshold fixes it, because at that distance the picture genuinely is a different picture to a global hash. We say so rather than claim 100%. Full method in [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md).
+
+### The registry
+
+| | |
 |---|---|
-| [SPEC.md](SPEC.md) | Single source of truth for the build |
-| [UX_SPEC.md](UX_SPEC.md) | The product surface, expanded from SPEC §8 |
-| [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md) | Milestone 0 measurements — the constants everything depends on |
-| [docs/DEMO.md](docs/DEMO.md) | The demo script |
-| [contracts/](contracts/) | Interface definitions, with the design decisions in the comments |
-| [schemas/](schemas/) | Manifest and resolution-result schemas |
+| Records on chain | **508** — 500 from a public photo corpus, labelled `@seed-corpus` |
+| LSH recall, 1,000 records, ≤7 bits flipped | **100%** — the pigeonhole guarantee behind the 8 × 8 band geometry |
+| Verify, end to end in the browser | **~2 s** |
+| First answer on a cold first visit | **5.8 s** — the fingerprint answers while the watermark model downloads |
+| Candidate fan-out through the Envio indexer | **90 ms**, vs 980 ms reading 8 bands from the chain (measured locally; the public app reads the chain directly) |
 
-## Licence
+Gas figures in [docs/GAS.md](docs/GAS.md).
+
+---
+
+## Things we found, and fixed or stated
+
+- **Adobe's TrustMark implementations disagree.** Grain's watermarks have to be readable by any TrustMark decoder, so we checked against all three Adobe ships. For the BCH_SUPER error-correction scheme, Adobe's Python reference and JavaScript library produce identical parity, but the Rust crate does not: it pads 40 data bits to 6 bytes where Python uses 5, and its leftover-byte loop drops Python's `pidx += 1`. So BCH_SUPER marks don't read across implementations. Grain ships **BCH_5**, which they all agree on: our browser encoder's codewords are bit-identical to Adobe's Python reference, and the Rust CLI reads them.
+- **The tamper threshold in our own spec was wrong.** At the planned value of 12, a third of legitimate 10% crops were flagged as stolen credentials. Measured against 210 unrelated image pairs, **16** catches every genuine transfer while nearly eliminating false alarms.
+- **The onchain index has a ceiling.** Over 913 real photos, the busiest LSH bucket held ~5× the average. Projected to a million records, reading it costs ~11.5 M gas in one call — inside a 150 M block limit, but within an order of magnitude. The production path is search off chain through the indexer, then prove the winner on chain with `verify()`.
+
+## Honest about conformance
+
+Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding assertion structure and the Soft Binding Resolution API shape; it does not run the `c2pa-rs` signing stack with certificates from the C2PA trust list. Our fingerprint algorithm, `grain.phash.v1`, is ours and not on the C2PA approved list — manifests say so with `algId: 0`. TrustMark Q is on it, as `algId: 4`.
+
+**A testnet trade-off we haven't solved for mainnet:** a passkey account starts with no funds, and the no-wallet promise means a photographer can't top it up. So a small faucet pays for a new creator's first transactions. That is fine on testnet; on mainnet someone has to pay, and the funding model there is an open question.
+
+---
+
+## Run it yourself
+
+| Contract — Monad testnet, chain 10143 | Address |
+|---|---|
+| GrainRegistry | [`0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20`](https://testnet.monadexplorer.com/address/0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20) |
+| FingerprintIndex | [`0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203`](https://testnet.monadexplorer.com/address/0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203) |
+| CreatorRegistry | [`0x783159d464B15180935222b342aEDc3Cf5ff2DE7`](https://testnet.monadexplorer.com/address/0x783159d464B15180935222b342aEDc3Cf5ff2DE7) |
+| LicenseRegistry | [`0x71260B7e406566D0fd880320b58537eE27895B1E`](https://testnet.monadexplorer.com/address/0x71260B7e406566D0fd880320b58537eE27895B1E) |
+
+```bash
+pnpm install
+./scripts/fetch-web-models.sh        # TrustMark models + WASM runtime, served by the app
+pnpm --filter @grain/web dev
+
+node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 43 tests
+cd packages/contracts && forge test                                          # 31 tests
+```
+
+Registering needs a passkey that supports the WebAuthn PRF extension — Safari with iCloud Keychain, Chrome with Google Password Manager, Android, or 1Password. Without one, Grain offers to keep a key in the browser instead, and says what that gives up before you choose it.
+
+| | |
+|---|---|
+| [SPEC.md](SPEC.md) | the design, and the decisions that are closed |
+| [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md) | the robustness matrix and thresholds |
+| [docs/GAS.md](docs/GAS.md) | gas, and the LSH scaling ceiling |
+| [docs/INDEXER.md](docs/INDEXER.md) | the Envio indexer |
+| [packages/grain-core](packages/grain-core) | fingerprint, manifest, resolution — isomorphic TypeScript |
+| [packages/contracts](packages/contracts) | the four contracts |
+| [apps/web](apps/web) | the app, including the browser TrustMark port |
+
+---
+
+## Credits
+
+TrustMark models and BCH library by [Adobe](https://github.com/adobe/trustmark), MIT. Seed corpus photographs via [Lorem Picsum](https://picsum.photos) / Unsplash — only their fingerprints are stored, never the images. Illustrations by [unDraw](https://undraw.co).
 
 MIT © 2026 Jerry Musaga, Musaga Technology
