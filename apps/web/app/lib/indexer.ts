@@ -72,6 +72,15 @@ export async function recordById(recordId: string): Promise<IndexedRecord | null
   return data?.Record[0] ?? null;
 }
 
+/** Licences granted for a record. Only the indexer keeps the list; the contract keeps a yes/no per licensee. */
+export async function licencesFor(recordId: string): Promise<{ licensee: string; amountWei: string; grantedAt: number }[] | null> {
+  const data = await query<{ License: { licensee: string; amountWei: string; grantedAt: number }[] }>(
+    `query($id:numeric!){ License(where:{recordId:{_eq:$id}}, order_by:{grantedAt:desc}){ licensee amountWei grantedAt } }`,
+    { id: recordId },
+  );
+  return data?.License ?? null;
+}
+
 export async function recentRecords(limit = 6): Promise<IndexedRecord[] | null> {
   const data = await query<{ Record: IndexedRecord[] }>(
     `query($n:Int!){ Record(order_by:{recordId:desc}, limit:$n, where:{revoked:{_eq:false}}){ ${RECORD_FIELDS} } }`,

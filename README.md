@@ -67,7 +67,7 @@ Three properties of the contracts, each chosen for good reasons, make direct rea
 
 1. **Manifests live in event data, not storage.** That is what makes a 16 KB manifest cost only 2.7× a 256 B one. But it means reading a manifest back is a log search — and Monad's public RPC caps `eth_getLogs` at 100 blocks per call, so finding one record's event means first estimating which 100 blocks to look in.
 2. **The fingerprint index is eight separate buckets.** Finding every record that might match an image means eight `queryBand` calls, then a `records()` read for every id they return.
-3. **Some questions have no onchain answer at all.** "What has @grain-samples registered?" and "What was registered in the last hour?" would mean reading every record ever made. There is no mapping to read, by design: indexes like those would make every registration more expensive for a question only readers ask.
+3. **Some questions have no onchain answer at all.** "What has @grain-studio registered?" and "What was registered in the last hour?" would mean reading every record ever made. There is no mapping to read, by design: indexes like those would make every registration more expensive for a question only readers ask.
 
 ### What the indexer builds
 
@@ -119,13 +119,15 @@ Agents now choose images to post, buy and build on, and they can't tell where an
 
 ```
 mm grain verify <image>          who made this image? (JSON verdict, forged credentials flagged)
-mm grain pay <image|record> <n>  pay that person, through the agent's MetaMask wallet
+mm grain license <image|record>  license it at the creator's price, through LicenseRegistry
+mm grain pay <image|record> <n>  pay that person any amount, through the agent's MetaMask wallet
 mm grain record <id>             look up a record
 mm grain creator <handle>        everything a creator has registered (via Envio)
 ```
 
 - **Same answer as the website.** The plugin bundles Grain's own resolver and the site's TrustMark port, so the CLI and the site cannot disagree about an image. Each verdict carries the distance `FingerprintIndex.verify()` returned on chain.
-- **Find the human, then pay them.** A creator's Grain account is an ordinary EOA, so the same address receives on any EVM chain. `pay` sends on Monad testnet by default, where the registry lives, through MetaMask's policy-gated executor; `--chain-id` pays on any other chain the wallet supports.
+- **Find the human, then license from them.** Creators can set a licence price when they register. `license` pays it through `LicenseRegistry`, which forwards every wei to the creator and records the licence on chain; Envio indexes it, and the record page shows the price and the count. `--max-price` stops an unattended agent overpaying.
+- **Or just pay them.** A creator's Grain account is an ordinary EOA, so the same address receives on any EVM chain. `pay` sends on Monad testnet by default, where the registry lives, through MetaMask's policy-gated executor; `--chain-id` pays on any other chain the wallet supports.
 - **Strict about money.** `pay` acts only on a clean match or an explicit record number. A forged watermark, an uncertain match or a withdrawn record is refused with the reason.
 
 ---

@@ -1,10 +1,11 @@
 # mm-plugin-grain
 
-**Grain for the [MetaMask Agent Wallet](https://docs.metamask.io/agent-wallet/).** Before an agent reposts, publishes or pays for an image, it can ask who made it, from the image itself, even after screenshots, crops and re-encoding. Then it can pay that person.
+**Grain for the [MetaMask Agent Wallet](https://docs.metamask.io/agent-wallet/).** Before an agent reposts, publishes or pays for an image, it can ask who made it, from the image itself, even after screenshots, crops and re-encoding. Then it can license the image at the creator's price, or pay them directly.
 
 ```
 mm grain verify <image>          who made this image?
-mm grain pay <image|record> <n>  pay them, through your MetaMask wallet
+mm grain license <image|record>  license it at the creator's price, on chain
+mm grain pay <image|record> <n>  pay them any amount, through your MetaMask wallet
 mm grain record <id>             look up a record
 mm grain creator <handle>        everything a creator has registered
 ```
@@ -13,7 +14,7 @@ mm grain creator <handle>        everything a creator has registered
 
 Agents increasingly pick images to post, buy or build on, and they have no way to tell where an image came from. Content credentials (C2PA) are stripped by the first screenshot. [Grain](https://grain-on-monad.vercel.app) is an open onchain registry that finds them again: an invisible TrustMark watermark and a perceptual fingerprint, cross-checked so that a watermark copied onto someone else's picture is reported as **forged** rather than believed.
 
-This plugin gives an agent the same answer the website gives, as JSON, and closes the loop with MetaMask: **find the human who made it, then pay them.**
+This plugin gives an agent the same answer the website gives, as JSON, and closes the loop with MetaMask: **find the human who made it, then license it from them.**
 
 ## Commands
 
@@ -27,10 +28,10 @@ $ mm grain verify https://grain-on-monad.vercel.app/samples/forged.jpg --json
   "ok": true,
   "data": {
     "state": "TAMPERED",
-    "summary": "Forged credential: the image carries @grain-samples's watermark, but the picture does not match what they registered. Do not attribute it to them.",
+    "summary": "Forged credential: the image carries @grain-studio's watermark, but the picture does not match what they registered. Do not attribute it to them.",
     "watermark": "found",
     "candidatesFrom": "indexer",
-    "onChainDistance": 30,
+    "onChainDistance": 32,
     ...
   }
 }
@@ -47,13 +48,26 @@ $ mm grain verify https://grain-on-monad.vercel.app/samples/forged.jpg --json
 
 The first run downloads the 45 MB watermark decoder once into `~/.cache/grain/models`. `--fast` skips it and matches by fingerprint alone, which also means it cannot detect forged watermarks.
 
+### `mm grain license <image|record>`
+
+Licenses the image through Grain's `LicenseRegistry` on Monad testnet, at the price the creator set when they registered. The contract forwards the full amount to the creator (there is no protocol fee) and records the licence on chain, where Grain's Envio indexer picks it up. Needs `mm login` and `wallet-submit`.
+
+```
+$ mm grain license https://grain-on-monad.vercel.app/samples/reposted.jpg --max-price 0.05 --dry-run
+Licensing record 511 costs 0.01 MON, paid in full to @grain-studio. Nothing was sent.
+```
+
+- `--max-price` refuses if the creator asks more. Use it for any unattended agent.
+- Same strictness as `pay`: forged, uncertain and withdrawn matches are refused, and so is a creator with no price set (the error suggests `pay` instead).
+- `mm grain record <id>` shows the price and how many licences have been granted.
+
 ### `mm grain pay <image|record> <amount>`
 
 Finds the creator, then sends them the amount through MetaMask's policy-gated wallet executor. Needs `mm login` and the `wallet-submit` capability, which you approve at install.
 
 ```
 $ mm grain pay ./downloaded.jpg 0.5 --dry-run
-Would send 0.5 on chain 10143 to @grain-samples (0x5bFa…1a65), the creator of record 510. Nothing was sent.
+Would send 0.5 on chain 10143 to @grain-studio (0x5c71…d7C8), the creator of record 511. Nothing was sent.
 ```
 
 - **Strict on purpose.** It pays only on a clean `RESOLVED` match or an explicit record number. A forged or uncertain match is refused with the reason, and so is a record its creator has withdrawn.

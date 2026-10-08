@@ -23,13 +23,27 @@ export const runtime = 'nodejs';
 
 /**
  * A first registration is two transactions: setProfile to record the creator's
- * name (~107k gas, measured) and register (~95-150k). At ~102 gwei that is about
- * 0.026 MON. The grant covers that with headroom for a second image, and no
- * more: the smaller the grant, the less a drained faucet costs.
+ * name (~107k gas) and register (~316k for a watermarked image, measured on
+ * record 511). Two things make a fixed grant fragile:
+ *
+ * - Monad checks gas limit x max fee against the balance up front, and charges
+ *   the full gas limit rather than the gas used.
+ * - Testnet gas moves: it doubled from ~50 to ~102 gwei during the build, and a
+ *   fixed 0.05 MON grant then fell short of one registration (0.058 MON up
+ *   front at a 182 gwei max fee).
+ *
+ * So the grant is priced from the current gas price: FLOOR covers one full
+ * registration at twice today's price, GRANT covers two, and both are capped so
+ * a gas spike cannot empty the faucet in a few claims.
  */
-const GRANT = parseEther('0.05');
-/** Only tops up accounts that genuinely cannot transact. */
-const FLOOR = parseEther('0.03');
+const ONE_REGISTRATION_GAS = 450_000n; // setProfile + a watermarked register, with margin
+const MAX_GRANT = parseEther('0.3');
+
+function amounts(gasPrice: bigint): { grant: bigint; floor: bigint } {
+  const perRegistration = 2n * gasPrice * ONE_REGISTRATION_GAS; // 2x: room for viem's max-fee headroom
+  const cap = (v: bigint) => (v > MAX_GRANT ? MAX_GRANT : v);
+  return { grant: cap(2n * perRegistration), floor: cap(perRegistration) };
+}
 
 /**
  * THIS IS A FAUCET ON A PUBLIC ENDPOINT AND IT CAN BE DRAINED.
@@ -68,8 +82,9 @@ export async function POST(req: Request) {
   const transport = http(rpc);
   const pub = createPublicClient({ transport });
 
-  const balance = await pub.getBalance({ address });
-  if (balance >= FLOOR) return Response.json({ funded: false, reason: 'already funded' });
+  const [balance, gasPrice] = await Promise.all([pub.getBalance({ address }), pub.getGasPrice()]);
+  const { grant, floor } = amounts(gasPrice);
+  if (balance >= floor) return Response.json({ funded: false, reason: 'already funded' });
 
   if (!underRateLimit()) {
     // The person can still register if they have funds; only the grant is
@@ -83,7 +98,9 @@ export async function POST(req: Request) {
 
   const hash = await wallet.sendTransaction({
     to: address,
-    value: GRANT,
+    // Top up to the grant rather than adding it: a part-funded account gets
+    // only what it is missing.
+    value: grant - balance,
     chain: null,
   });
   await pub.waitForTransactionReceipt({ hash });

@@ -1,7 +1,7 @@
 {
   "name": "mm-plugin-grain",
   "version": "0.1.0",
-  "description": "Grain for the MetaMask Agent Wallet: find out who made an image, then pay them",
+  "description": "Grain for the MetaMask Agent Wallet: find out who made an image, then license it or pay them",
   "license": "MIT",
   "type": "module",
   "repository": {

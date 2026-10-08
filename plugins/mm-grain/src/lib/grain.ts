@@ -18,7 +18,8 @@ const RPC = process.env.GRAIN_RPC_URL ?? 'https://testnet-rpc.monad.xyz';
 const INDEXER = process.env.GRAIN_INDEXER_URL ?? 'https://indexer.dev.hyperindex.xyz/99250c3/v1/graphql';
 
 export const REGISTRY_CHAIN_ID = deployments.chainId;
-const C = deployments.contracts as Record<'GrainRegistry' | 'FingerprintIndex' | 'CreatorRegistry', `0x${string}`>;
+const C = deployments.contracts as Record<'GrainRegistry' | 'FingerprintIndex' | 'CreatorRegistry' | 'LicenseRegistry', `0x${string}`>;
+export const LICENSE_REGISTRY = C.LicenseRegistry;
 
 const chain = defineChain({
   id: deployments.chainId,
@@ -39,6 +40,11 @@ const indexAbi = parseAbi([
 ]);
 const creatorAbi = parseAbi([
   'function creators(address) view returns ((string handle, string profileURI, uint256 licensePriceWei))',
+]);
+export const licenceAbi = parseAbi([
+  'function license(uint64 recordId) payable',
+  'function priceOf(uint64 recordId) view returns (uint256)',
+  'function hasLicense(uint64 recordId, address licensee) view returns (bool)',
 ]);
 const ZERO = '0x0000000000000000000000000000000000000000';
 
@@ -173,6 +179,19 @@ export async function creatorByHandle(handle: string): Promise<CreatorListing | 
   if (!c) return null;
   const records = c.records.map((r) => ({ ...r, registeredAt: new Date(r.registeredAt * 1000).toISOString() }));
   return { address: c.id, handle: c.handle, recordCount: c.recordCount, records };
+}
+
+/** The creator's current licence price for a record, from the contract. 0 means not licensable. */
+export async function licencePrice(recordId: bigint): Promise<bigint> {
+  return rpc().readContract({ address: C.LicenseRegistry, abi: licenceAbi, functionName: 'priceOf', args: [recordId] });
+}
+
+/** Licences granted for a record, newest first. Only the indexer keeps the list. */
+export async function licencesFor(recordId: bigint): Promise<{ licensee: string; amountWei: string; grantedAt: number; txHash: string }[] | null> {
+  const data = await gql<{ License: { licensee: string; amountWei: string; grantedAt: number; txHash: string }[] }>(
+    `query($id:numeric!){ License(where:{recordId:{_eq:$id}}, order_by:{grantedAt:desc}){ licensee amountWei grantedAt txHash } }`,
+    { id: recordId.toString() });
+  return data?.License ?? null;
 }
 
 export async function indexedRecord(recordId: bigint): Promise<{ blockNumber: number; txHash: string } | null> {

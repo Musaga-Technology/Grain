@@ -9,9 +9,10 @@
  *
  * Three scenes, chosen to be far apart as fingerprints so the samples cannot
  * be mistaken for one another: dusk (the registered one), night (the image a
- * forged mark is stamped onto) and sea (never registered).
+ * forged mark is stamped onto), sea (never registered) and meadow (registered
+ * with a licence price, for `mm grain license`).
  *
- *   node --experimental-strip-types scripts/make-sample-art.ts <out.png> <dusk|night|sea> [seed]
+ *   node --experimental-strip-types scripts/make-sample-art.ts <out.png> <dusk|night|sea|meadow> [seed]
  */
 import { writeFileSync } from 'node:fs';
 import { encodePNG } from '../packages/grain-core/src/png-encode.ts';
@@ -50,6 +51,17 @@ const SCENES: Record<string, { sky: number[][]; layers: Layer[]; sun: { x: numbe
       { y: 0.62, amp: 0.08, color: [226, 226, 236], f: ridge(4, 0.007) },
     ],
     sun: { x: W * 0.8, y: H * 0.14, r: 40, color: [250, 250, 255] },
+  },
+  // A bright meadow under a high sun: light across the top two-thirds, the
+  // inverse of dusk's dark sky. The licensable sample (see the README).
+  meadow: {
+    sky: [[120, 180, 235], [170, 210, 240], [215, 232, 245], [240, 245, 235]],
+    layers: [
+      { y: 0.50, amp: 0.10, color: [120, 170, 90], f: ridge(4, 0.004) },
+      { y: 0.60, amp: 0.10, color: [70, 120, 55], f: ridge(5, 0.006) },
+      { y: 0.72, amp: 0.08, color: [30, 70, 35], f: ridge(6, 0.02) },
+    ],
+    sun: { x: W * 0.22, y: H * 0.16, r: 50, color: [255, 252, 230] },
   },
   // Bright sky top-left, a dark headland on the right, sea across the bottom.
   sea: {

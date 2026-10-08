@@ -27,7 +27,7 @@ const ACCEPTED = ['image/png', 'image/jpeg'];
 
 /**
  * Ready-made copies for a visitor with no image to hand. All four come from
- * one procedurally generated artwork registered as @grain-samples (record 510),
+ * one procedurally generated artwork registered as @grain-studio (record 511),
  * so the attribution they resolve to is true. scripts/make-sample-art.ts makes
  * the art; each copy is a real, measured outcome rather than a scripted one.
  */
@@ -38,11 +38,11 @@ const SAMPLES = [
   },
   {
     id: 'squashed', label: 'Filtered and crushed', file: '/samples/squashed.jpg',
-    explain: 'Filtered, halved and compressed to 9 KB. That destroyed the watermark, so Grain found the record from the picture itself.',
+    explain: 'Filtered, halved and compressed to 8 KB. That destroyed the watermark, so Grain found the record from the picture itself.',
   },
   {
     id: 'forged', label: 'A forged credential', file: '/samples/forged.jpg',
-    explain: 'Someone stamped @grain-samples’ watermark onto a different picture. The mark points to the record, but the picture doesn’t match it — so Grain refuses to attribute it.',
+    explain: 'Someone stamped @grain-studio’s watermark onto a different picture. The mark points to the record, but the picture doesn’t match it — so Grain refuses to attribute it.',
   },
   {
     id: 'unregistered', label: 'Never registered', file: '/samples/unregistered.jpg',

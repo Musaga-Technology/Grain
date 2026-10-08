@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { createWalletClient, createPublicClient, http, bytesToHex, type Hex } from 'viem';
+import { createWalletClient, createPublicClient, http, bytesToHex, parseEther, type Hex } from 'viem';
 import {
   decodeImage, fingerprint, buildManifest, signManifestWith, encodeSignedManifest, encodePNG,
   aspectRatioWarning,
@@ -44,6 +44,8 @@ export default function Register() {
   const [phase, setPhase] = useState<Phase>({ kind: 'choosing' });
   const [title, setTitle] = useState('');
   const [name, setName] = useState('');
+  // Optional, in MON. Per creator, not per image: that is how the contract stores it.
+  const [price, setPrice] = useState('');
   // Asked once. A returning creator already has a name on chain, and the app
   // knows which visit this is without asking (UX_SPEC /register).
   const [firstVisit, setFirstVisit] = useState(true);
@@ -181,18 +183,31 @@ export default function Register() {
       // record, and a taken handle must not cost someone their registration.
       let handle = await handleOf(session.account.address);
       const wanted = name.trim() ? toHandle(name) : null;
+      const priceWei = licencePriceWei(price);
       if (!handle && wanted) {
         try {
           step('Saving your name');
           const chosen = await availableHandle(wanted, session.account.address);
           const tx = await wallet.writeContract({
             address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
-            args: [chosen, '', 0n],
+            args: [chosen, '', priceWei ?? 0n],
           });
           const receipt = await reader.waitForTransactionReceipt({ hash: tx });
           if (receipt.status === 'success') handle = chosen;
         } catch (e) {
           console.warn('could not save the creator name', e);
+        }
+      } else if (handle && priceWei !== null) {
+        // A returning creator changing their price keeps their name.
+        try {
+          step('Saving your licence price');
+          const tx = await wallet.writeContract({
+            address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
+            args: [handle, '', priceWei],
+          });
+          await reader.waitForTransactionReceipt({ hash: tx });
+        } catch (e) {
+          console.warn('could not save the licence price', e);
         }
       }
 
@@ -231,7 +246,7 @@ export default function Register() {
     } finally {
       session.end();
     }
-  }, [title, name]);
+  }, [title, name, price]);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -289,6 +304,27 @@ export default function Register() {
                   </span>
                 </label>
               )}
+
+              <details className="mt-7 group" open={price !== ''}>
+                <summary className="cursor-pointer text-sm select-none" style={{ color: 'var(--ink-muted)' }}>
+                  Let AI agents license your work (optional)
+                </summary>
+                <label className="block mt-3">
+                  <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Licence price, in MON</span>
+                  <input
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, ''))}
+                    inputMode="decimal"
+                    placeholder="0.01"
+                    className="mt-2 w-full rounded-lg px-4 py-3 text-base bg-transparent border"
+                    style={{ borderColor: price && licencePriceWei(price) === null ? 'var(--accent)' : 'var(--rule)' }}
+                  />
+                  <span className="mt-2 block text-sm" style={{ color: 'var(--ink-faint)' }}>
+                    Agents using the MetaMask Agent Wallet can license your images for this amount, paid
+                    straight to you, with no fee. It applies to all your images. Leave it empty to stay unlicensable.
+                  </span>
+                </label>
+              </details>
 
               <label className="block mt-7">
                 <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Title (optional)</span>
@@ -399,4 +435,15 @@ export default function Register() {
       <Footer />
     </div>
   );
+}
+
+/** A positive MON amount as wei, or null for empty or unusable input. */
+function licencePriceWei(input: string): bigint | null {
+  if (!input.trim()) return null;
+  try {
+    const wei = parseEther(input.trim());
+    return wei > 0n ? wei : null;
+  } catch {
+    return null;
+  }
 }

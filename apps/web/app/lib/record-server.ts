@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { createPublicClient, http, keccak256, parseAbi, parseAbiItem, type Hex } from 'viem';
 import { decodeCbor, verifyManifest, type GrainManifest } from '@grain/core';
 import { CONTRACTS, creatorAbi } from './chain';
-import { recordById } from './indexer';
+import { licencesFor, recordById } from './indexer';
 import deployments from '../../../../deployments/monad-testnet.json';
 
 /**
@@ -161,3 +161,17 @@ async function load(recordId: string): Promise<RecordView | null> {
  */
 export const loadRecord = (recordId: string) =>
   unstable_cache(() => load(recordId), ['record', recordId, deployments.contracts.GrainRegistry], { revalidate: 3600 })();
+
+/**
+ * Licensing, kept out of loadRecord's hour-long cache: a creator can change
+ * their price and licences accrue, so this is read fresh with the page. The
+ * price comes from the contract; only the count of licences needs the indexer.
+ */
+export async function loadLicensing(creator: Hex, recordId: string): Promise<{ priceWei: bigint; licences?: number }> {
+  const [profile, licences] = await Promise.all([
+    client.readContract({ address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'creators', args: [creator] })
+      .catch(() => null),
+    licencesFor(recordId),
+  ]);
+  return { priceWei: profile?.licensePriceWei ?? 0n, licences: licences?.length };
+}

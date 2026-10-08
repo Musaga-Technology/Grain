@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { formatEther } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
-import { loadRecord } from '../../lib/record-server';
+import { loadLicensing, loadRecord } from '../../lib/record-server';
 
 /**
  * A permanent, shareable record page.
@@ -52,6 +53,7 @@ function Check({ ok, children }: { ok: boolean | undefined; children: React.Reac
 export default async function RecordPage({ params }: { params: Promise<{ recordId: string }> }) {
   const { recordId } = await params;
   const record = /^\d+$/.test(recordId) ? await loadRecord(recordId).catch(() => null) : null;
+  const licensing = record ? await loadLicensing(record.creator, recordId) : null;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -166,6 +168,22 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
                   {JSON.stringify(record.manifest, null, 2)}
                 </pre>
               </details>
+            )}
+
+            {licensing && licensing.priceWei > 0n && (
+              <div className="mt-12 rounded-lg border px-5 py-4" style={{ borderColor: 'var(--rule)' }}>
+                <p className="text-[15px]">
+                  Licensable for <strong>{formatEther(licensing.priceWei)} MON</strong>, paid in full to the creator
+                  {licensing.licences ? <> &middot; {licensing.licences} {licensing.licences === 1 ? 'licence' : 'licences'} so far</> : null}
+                </p>
+                <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                  AI agents can license it with the MetaMask Agent Wallet:
+                </p>
+                <code className="mt-2 block rounded-md px-3 py-2 text-[13px] font-mono overflow-x-auto"
+                      style={{ background: 'var(--surface)' }}>
+                  mm grain license {recordId}
+                </code>
+              </div>
             )}
 
             <div className="mt-12 rounded-lg px-5 py-4" style={{ background: 'var(--brand-soft)' }}>
