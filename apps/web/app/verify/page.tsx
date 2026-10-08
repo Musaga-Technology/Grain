@@ -26,6 +26,50 @@ const RESOLVER = process.env.NEXT_PUBLIC_RESOLVER_URL;
 const ACCEPTED = ['image/png', 'image/jpeg'];
 
 /**
+ * Everything else the browser can decode -- WebP above all, which is what most
+ * image links on the web actually serve -- is converted to PNG first, using the
+ * browser's own decoder. That adds the platform drift ACCEPTED avoids, but only
+ * a few bits of it, well inside the match threshold; refusing WebP would make
+ * checking an image from the web fail most of the time.
+ */
+async function readable(file: File): Promise<File | null> {
+  if (ACCEPTED.includes(file.type)) return file;
+  if (!file.type.startsWith('image/')) return null;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width; canvas.height = bitmap.height;
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
+    return blob ? new File([blob], file.name.replace(/(\.\w+)?$/, '.png'), { type: 'image/png' }) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * An image from a link. Straight from the site when it allows that (CORS);
+ * otherwise through /api/fetch-image, which most sites need.
+ */
+async function fetchImage(link: string): Promise<File> {
+  const name = (() => { try { return new URL(link).pathname.split('/').pop() || 'image'; } catch { return 'image'; } })();
+  try {
+    const direct = await fetch(link, { mode: 'cors' });
+    if (direct.ok && (direct.headers.get('content-type') ?? '').startsWith('image/')) {
+      const blob = await direct.blob();
+      return new File([blob], name, { type: blob.type });
+    }
+  } catch { /* no CORS: go through Grain */ }
+  const res = await fetch(`/api/fetch-image?url=${encodeURIComponent(link)}`);
+  if (!res.ok) {
+    const { error } = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(error ?? "Grain couldn't fetch that image.");
+  }
+  const blob = await res.blob();
+  return new File([blob], name, { type: blob.type });
+}
+
+/**
  * Ready-made copies for a visitor with no image to hand. All four come from
  * one procedurally generated artwork registered as @grain-studio (record 511),
  * so the attribution they resolve to is true. scripts/make-sample-art.ts makes
@@ -72,10 +116,11 @@ export default function Verify() {
   const fileInput = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
 
-  const handle = useCallback(async (file: File, sample?: Sample) => {
-    if (!ACCEPTED.includes(file.type)) {
+  const handle = useCallback(async (picked: File, sample?: Sample) => {
+    const file = await readable(picked);
+    if (!file) {
       // Plain language, never a MIME type (UX_SPEC "Input").
-      setPhase({ kind: 'error', message: "Grain reads PNG and JPEG images. Try saving this one as either." });
+      setPhase({ kind: 'error', message: "Grain can't read that file as an image. Try a PNG or JPEG." });
       return;
     }
 
@@ -181,13 +226,26 @@ export default function Verify() {
     }
   }, [handle]);
 
+  const [link, setLink] = useState('');
+  const checkLink = useCallback(async (url: string) => {
+    setPhase({ kind: 'working', step: 0, slow: false, preview: url });
+    try {
+      await handle(await fetchImage(url));
+    } catch (e) {
+      setPhase({ kind: 'error', message: (e as Error).message });
+    }
+  }, [handle]);
+
   // /verify?sample=forged opens straight onto a sample: for links from the
   // landing page, and for showing someone the product in one click.
+  // /verify?url=... checks an image from the web: what the browser extension opens.
   useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get('sample');
-    const sample = SAMPLES.find((x) => x.id === wanted);
+    const params = new URLSearchParams(window.location.search);
+    const sample = SAMPLES.find((x) => x.id === params.get('sample'));
     if (sample) void trySample(sample);
-  }, [trySample]);
+    const url = params.get('url');
+    if (url && /^https?:\/\//i.test(url)) { setLink(url); void checkLink(url); }
+  }, [trySample, checkLink]);
 
   const reset = () => { setChainDistance(null); setPhase({ kind: 'idle' }); };
 
@@ -264,8 +322,21 @@ export default function Verify() {
                 </span>
               </button>
 
+              <form className="mt-5 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (/^https?:\/\//i.test(link.trim())) void checkLink(link.trim()); }}>
+                <input value={link} onChange={(e) => setLink(e.target.value)} type="url" inputMode="url"
+                       placeholder="or paste an image link"
+                       className="min-w-0 flex-1 rounded-full border bg-transparent px-4 py-2.5 text-sm"
+                       style={{ borderColor: 'var(--rule)' }} />
+                <button type="submit" disabled={!/^https?:\/\//i.test(link.trim())}
+                        className="rounded-full border px-4 py-2.5 text-sm disabled:opacity-40"
+                        style={{ borderColor: 'var(--rule)' }}>
+                  Check
+                </button>
+              </form>
+
               <p className="mt-5 text-sm" style={{ color: 'var(--ink-faint)' }}>
-                PNG or JPEG. Your image is checked on your own device and never uploaded.
+                Your image is checked on your own device and never uploaded. A link is fetched for you, not stored.{' '}
+                <a href="/extension" className="underline underline-offset-4">Check images right from any page</a>.
               </p>
 
               <div className="mt-12 text-left">
@@ -345,7 +416,7 @@ export default function Verify() {
         <input
           ref={fileInput}
           type="file"
-          accept={ACCEPTED.join(',')}
+          accept="image/*"
           className="sr-only"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void handle(f); e.target.value = ''; }}
         />

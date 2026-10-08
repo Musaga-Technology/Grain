@@ -27,6 +27,7 @@ export function Footer() {
            style={{ color: 'var(--ink-faint)' }}>
         <p>An open registry for content provenance. Built on Monad.</p>
         <p>
+          <Link href="/extension" className="hover:underline underline-offset-4">Browser extension</Link> &middot;{' '}
           C2PA-compatible &middot;{' '}
           <a href="https://github.com/Musaga-Technology/Grain" className="hover:underline underline-offset-4">
             Source
