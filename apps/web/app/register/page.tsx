@@ -188,10 +188,10 @@ export default function Register() {
         try {
           step('Saving your name');
           const chosen = await availableHandle(wanted, session.account.address);
-          const tx = await wallet.writeContract({
+          const tx = await afterFunding(() => wallet.writeContract({
             address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
             args: [chosen, '', priceWei ?? 0n],
-          });
+          }));
           const receipt = await reader.waitForTransactionReceipt({ hash: tx });
           if (receipt.status === 'success') handle = chosen;
         } catch (e) {
@@ -199,12 +199,13 @@ export default function Register() {
         }
       } else if (handle && priceWei !== null) {
         // A returning creator changing their price keeps their name.
+        const keep = handle;
         try {
           step('Saving your licence price');
-          const tx = await wallet.writeContract({
+          const tx = await afterFunding(() => wallet.writeContract({
             address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
-            args: [handle, '', priceWei],
-          });
+            args: [keep, '', priceWei],
+          }));
           await reader.waitForTransactionReceipt({ hash: tx });
         } catch (e) {
           console.warn('could not save the licence price', e);
@@ -212,12 +213,12 @@ export default function Register() {
       }
 
       step('Recording it');
-      const hash = await wallet.writeContract({
+      const hash = await afterFunding(() => wallet.writeContract({
         address: CONTRACTS.GrainRegistry,
         abi: registryAbi,
         functionName: 'register',
         args: [recordId, fp, bytesToHex(encodeSignedManifest(manifest))],
-      });
+      }));
       // Confirmed, not just sent. register() reverts if another registration
       // took this recordId first, and reporting that as success would hand the
       // person a watermark pointing at someone else's record.
@@ -445,5 +446,25 @@ function licencePriceWei(input: string): bigint | null {
     return wei > 0n ? wei : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Monad validates a new transaction against state a few blocks behind the
+ * tip, so for a second or two after the faucet's grant lands, a brand-new
+ * account can still look empty and be refused with "insufficient balance".
+ * Measured: a licence sent straight after funding failed once, then went
+ * through two seconds later. Retry that one error, briefly; anything else is
+ * a real failure and surfaces at once.
+ */
+async function afterFunding<T>(send: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await send();
+    } catch (e) {
+      const text = `${(e as { details?: string }).details ?? ''} ${(e as Error).message ?? ''}`;
+      if (attempt >= 5 || !/insufficient balance/i.test(text)) throw e;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
   }
 }

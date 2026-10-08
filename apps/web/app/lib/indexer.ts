@@ -108,22 +108,43 @@ export async function recentRecords(limit = 6): Promise<IndexedRecord[] | null> 
   return data?.Record ?? null;
 }
 
+export interface IndexedLicence {
+  recordId: string;
+  licensee: string;
+  amountWei: string;
+  grantedAt: number;
+  txHash: string;
+}
+
 export interface CreatorPage {
   address: string;
   handle: string;
   recordCount: number;
   records: IndexedRecord[];
+  licencePriceWei: string;
+  /** Every licence sold, newest first: the creator's earnings, straight from the chain's events. */
+  licences: IndexedLicence[];
 }
 
 export async function creatorByHandle(handle: string): Promise<CreatorPage | null | 'unavailable'> {
-  const data = await query<{ Creator: { id: string; handle: string; recordCount: number; records: IndexedRecord[] }[] }>(
-    `query($h:String!){ Creator(where:{handle:{_eq:$h}}){ id handle recordCount
+  const data = await query<{ Creator: { id: string; handle: string; recordCount: number; licensePriceWei: string; records: IndexedRecord[] }[] }>(
+    `query($h:String!){ Creator(where:{handle:{_eq:$h}}){ id handle recordCount licensePriceWei
        records(order_by:{recordId:desc}, limit:60){ ${RECORD_FIELDS} } } }`,
     { h: handle },
   );
   if (data === null) return 'unavailable';
   const c = data.Creator[0];
-  return c ? { address: c.id, handle: c.handle, recordCount: c.recordCount, records: c.records } : null;
+  if (!c) return null;
+  // A second query rather than a relation: License is keyed by the creator's
+  // address, and the schema keeps it a flat table for the plugin's lookups.
+  const lic = await query<{ License: IndexedLicence[] }>(
+    `query($c:String!){ License(where:{creator:{_eq:$c}}, order_by:{grantedAt:desc}){ recordId licensee amountWei grantedAt txHash } }`,
+    { c: c.id.toLowerCase() },
+  );
+  return {
+    address: c.id, handle: c.handle, recordCount: c.recordCount, records: c.records,
+    licencePriceWei: c.licensePriceWei, licences: lic?.License ?? [],
+  };
 }
 
 export async function registryStats(): Promise<{ records: number; creators: number } | null> {
