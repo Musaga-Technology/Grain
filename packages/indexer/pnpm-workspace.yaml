@@ -1,0 +1,4 @@
+# Envio Cloud installs this folder on its own (root dir packages/indexer), so
+# the indexer is its own pnpm workspace here, with its own lockfile, rather
+# than resolving through the monorepo's.
+packages: []
