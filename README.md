@@ -78,7 +78,7 @@ JPEG 20 defeats the watermark but not the fingerprint; a 10% crop defeats the fi
 
 | | |
 |---|---|
-| Records on chain | **508** — 500 from a public photo corpus, labelled `@seed-corpus` |
+| Records on chain | **500+** — 500 from a public photo corpus, labelled `@seed-corpus`; the rest registered through the app |
 | LSH recall, 1,000 records, ≤7 bits flipped | **100%** — the pigeonhole guarantee behind the 8 × 8 band geometry |
 | Verify, end to end in the browser | **~2 s** |
 | First answer on a cold first visit | **5.8 s** — the fingerprint answers while the watermark model downloads |
