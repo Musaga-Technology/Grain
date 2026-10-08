@@ -132,6 +132,18 @@ mm grain creator <handle>        everything a creator has registered (via Envio)
 
 ---
 
+## Why creators come back
+
+A registry people visit once doesn't build coverage. So Grain gives creators reasons to return, and every one of them also brings in new people:
+
+- **Earnings.** A creator's page (`/c/:handle`) shows MON earned and licences sold, each linked to its transaction. The figures are sums of `LicenseGranted` events, served by Envio.
+- **Activity.** Every time someone checks a copy of their work, the creator sees it: checks this week, and **forged copies caught**. "3 new since your last visit" is the reason to come back. A check reports only a record number and a verdict, never the image.
+- **Share cards.** Every record and creator link unfolds into a card naming the creator, with the image's fingerprint drawn large. Sharing your record is how other people find Grain.
+- **Batches.** Up to ten images with one passkey prompt, and the marked copies come back as one zip.
+- **The browser extension.** Right-click any image on the web, then "Who made this image?" ([`extensions/chrome`](extensions/chrome), 32 lines, whose only permission is the right-click menu). Or paste any image link on the check page.
+
+---
+
 ## Measured, not asserted
 
 ### Robustness — 21 real images × 11 transformations
@@ -175,6 +187,8 @@ Gas figures in [docs/GAS.md](docs/GAS.md).
 
 Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding assertion structure and the Soft Binding Resolution API shape; it does not run the `c2pa-rs` signing stack with certificates from the C2PA trust list. Our fingerprint algorithm, `grain.phash.v1`, is ours and not on the C2PA approved list — manifests say so with `algId: 0`. TrustMark Q is on it, as `algId: 4`.
 
+**Two things that aren't fully local.** Checking an image *by link* fetches that public image through Grain's server, because most sites don't let a browser read their images directly; the route is locked to public addresses, 15 MB and 10 seconds, and stores nothing. And the activity creators see is *reported by visitors' browsers*, not proven on chain: the creator is looked up from the chain, so a report can't name someone else, but a report itself can't be verified.
+
 **A testnet trade-off we haven't solved for mainnet:** a passkey account starts with no funds, and the no-wallet promise means a photographer can't top it up. So a small faucet pays for a new creator's first transactions. That is fine on testnet; on mainnet someone has to pay, and the funding model there is an open question.
 
 ---
@@ -209,6 +223,7 @@ Registering needs a passkey that supports the WebAuthn PRF extension — Safari 
 | [packages/contracts](packages/contracts) | the four contracts |
 | [apps/web](apps/web) | the app, including the browser TrustMark port |
 | [plugins/mm-grain](plugins/mm-grain) | the MetaMask Agent Wallet plugin |
+| [extensions/chrome](extensions/chrome) | the browser extension |
 
 ---
 

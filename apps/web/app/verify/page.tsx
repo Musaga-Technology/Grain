@@ -247,6 +247,27 @@ export default function Verify() {
     if (url && /^https?:\/\//i.test(url)) { setLink(url); void checkLink(url); }
   }, [trySample, checkLink]);
 
+  /*
+   * Tell the creator their work was checked: the record number and the
+   * verdict, nothing else (see app/lib/activity). Once per check, on the final
+   * answer only, and never for the demo samples -- those are not real-world
+   * encounters with anyone's work.
+   */
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    if (phase.kind !== 'done' || phase.watermarkPending || phase.sample || reported.current === phase.preview) return;
+    reported.current = phase.preview;
+    const r = phase.result;
+    const recordId = r.state === 'RESOLVED' ? r.record.recordId
+      : r.state === 'TAMPERED' ? r.claimed.recordId
+      : r.state === 'UNCERTAIN' ? r.candidates[0]?.recordId : undefined;
+    if (recordId === undefined) return;
+    void fetch('/api/activity', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ recordId: String(recordId), verdict: r.state }), keepalive: true,
+    }).catch(() => {});
+  }, [phase]);
+
   const reset = () => { setChainDistance(null); setPhase({ kind: 'idle' }); };
 
   /*

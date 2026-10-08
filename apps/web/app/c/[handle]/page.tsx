@@ -5,6 +5,8 @@ import { formatEther } from 'viem';
 import { RecordRow, relativeTime } from '../../components/LiveRegistry';
 import { creatorByHandle, type CreatorPage } from '../../lib/indexer';
 import { Share } from '../../components/Share';
+import { Activity } from '../../components/Activity';
+import { activityEnabled, activityFor } from '../../lib/activity';
 
 /**
  * A creator's portfolio: every record registered under one name.
@@ -26,6 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
 export default async function CreatorPage({ params }: { params: Promise<{ handle: string }> }) {
   const handle = decodeURIComponent((await params).handle).replace(/^@/, '').toLowerCase();
   const creator = /^[a-z0-9-]{1,32}$/.test(handle) ? await creatorByHandle(handle) : null;
+  const events = creator && creator !== 'unavailable' && activityEnabled() ? await activityFor(creator.address) : null;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -61,6 +64,8 @@ export default async function CreatorPage({ params }: { params: Promise<{ handle
             </div>
 
             <Earnings creator={creator} />
+
+            {events && <Activity handle={creator.handle} events={events} />}
 
             <h2 className="mt-12 text-sm font-medium">Images</h2>
             <ul className="mt-3 grid gap-3">
