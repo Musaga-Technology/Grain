@@ -147,12 +147,37 @@ export function useModelBytes(bytes: ModelBytes) { local = bytes; }
 
 const ready = new Set<string>();
 
+/**
+ * Model bytes, kept in Cache Storage across visits.
+ *
+ * The HTTP cache is not enough: Chromium declines to store a 45 MB response,
+ * immutable header or not, so without this every visit re-downloaded the
+ * decoder. Cache Storage has no per-entry limit. The file names carry no
+ * version, so the cache name does: bump it when the models change.
+ */
+const MODEL_CACHE = 'grain-models-v1';
+
+async function modelBytes(url: string): Promise<Uint8Array> {
+  let cache: Cache | undefined;
+  try {
+    cache = await caches.open(MODEL_CACHE);
+    const hit = await cache.match(url);
+    if (hit) return new Uint8Array(await hit.arrayBuffer());
+  } catch { /* no Cache Storage (private mode, insecure origin): just fetch */ }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`could not load ${url}: ${res.status}`);
+  if (cache) await cache.put(url, res.clone()).catch(() => {});
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 function session(name: 'encoder' | 'decoder' | 'resizer'): Promise<ort.InferenceSession> {
   configureWasm();
   const file = name === 'resizer' ? 'resizer.onnx' : `${name}_Q.onnx`;
-  sessions[name] ??= ort.InferenceSession.create(
-    (local[name] ?? `${MODEL_BASE}${file}`) as never, SESSION_OPTS,
-  ).then((s) => { ready.add(name); return s; });
+  sessions[name] ??= (local[name] ? Promise.resolve(local[name]!) : modelBytes(`${MODEL_BASE}${file}`))
+    .then((bytes) => ort.InferenceSession.create(bytes as never, SESSION_OPTS))
+    .then((s) => { ready.add(name); return s; });
+  // A failed load must not stick: let the next call try again.
+  sessions[name]!.catch(() => { delete sessions[name]; });
   return sessions[name]!;
 }
 
