@@ -2,7 +2,7 @@
 
 **An open, onchain C2PA manifest repository. Find out who made an image, from the image itself — after screenshots, crops and re-encoding.**
 
-**Live:** [grain-rho.vercel.app](https://grain-rho.vercel.app) · Monad testnet · built for [Metropolis](https://monad.xyz/developers/hackathons/metropolis), Track 04
+**Live:** [grain-on-monad.vercel.app](https://grain-on-monad.vercel.app) · Monad testnet · built for [Metropolis](https://monad.xyz/developers/hackathons/metropolis), Track 04
 
 > **Demo video:** _link goes here_
 

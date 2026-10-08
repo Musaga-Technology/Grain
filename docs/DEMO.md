@@ -3,7 +3,7 @@
 Three minutes. Every beat below has been run end to end in a real browser
 against the live deployment — nothing here is a promise.
 
-**Record it on [grain-rho.vercel.app](https://grain-rho.vercel.app)**, not
+**Record it on [grain-on-monad.vercel.app](https://grain-on-monad.vercel.app)**, not
 localhost: passkeys need HTTPS, and judges should see the URL they can visit.
 
 ## Before you record
