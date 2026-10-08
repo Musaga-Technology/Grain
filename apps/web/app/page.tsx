@@ -70,7 +70,12 @@ export default function Landing() {
 
         <section className="border-t" style={{ borderColor: 'var(--rule)', background: 'var(--surface)' }}>
           <div className="mx-auto max-w-5xl px-5 py-16 sm:py-20">
-            <h2 style={{ fontFamily: 'var(--serif)' }} className="text-2xl sm:text-3xl">How it works</h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h2 style={{ fontFamily: 'var(--serif)' }} className="text-2xl sm:text-3xl">How it works</h2>
+              <a href="/forge" className="text-sm underline underline-offset-4" style={{ color: 'var(--ink-muted)' }}>
+                Try to fool it &rarr;
+              </a>
+            </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {STEPS.map((step, i) => (
                 <div key={step.title} className={`grain-card grain-rise grain-delay-${i + 1} rounded-lg p-6`}>
