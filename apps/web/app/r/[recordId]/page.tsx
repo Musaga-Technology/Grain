@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { formatEther } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
 import { loadLicensing, loadRecord } from '../../lib/record-server';
+import { Share } from '../../components/Share';
 
 /**
  * A permanent, shareable record page.
@@ -31,11 +32,12 @@ export async function generateMetadata({ params }: { params: Promise<{ recordId:
 
 function relativeTime(unixSeconds: number): string {
   const s = Math.max(0, Math.floor(Date.now() / 1000) - unixSeconds);
+  const ago = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
   if (s < 90) return 'moments ago';
-  if (s < 3600) return `${Math.floor(s / 60)} minutes ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} hours ago`;
-  if (s < 86400 * 30) return `${Math.floor(s / 86400)} days ago`;
-  return `${Math.floor(s / 86400 / 30)} months ago`;
+  if (s < 3600) return ago(Math.floor(s / 60), 'minute');
+  if (s < 86400) return ago(Math.floor(s / 3600), 'hour');
+  if (s < 86400 * 30) return ago(Math.floor(s / 86400), 'day');
+  return ago(Math.floor(s / 86400 / 30), 'month');
 }
 
 function Check({ ok, children }: { ok: boolean | undefined; children: React.ReactNode }) {
@@ -94,6 +96,11 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
                 </>
               )}
             </p>
+
+            <div className="mt-6">
+              <Share path={`/r/${recordId}`}
+                     text={`${record.title ? `“${record.title}” — ` : ''}made by ${record.handle ? `@${record.handle}` : 'its creator'}, registered on Grain. Check any copy of it:`} />
+            </div>
 
             {record.revoked && (
               <p className="mt-6 px-4 py-3 rounded-lg text-[15px]"

@@ -15,11 +15,12 @@ function relativeTime(unixSeconds: number): string {
   const seconds = Math.max(0, Math.floor(Date.now() / 1000) - unixSeconds);
   const day = 86400;
   if (seconds < 60) return 'moments ago';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-  if (seconds < day) return `${Math.floor(seconds / 3600)} hours ago`;
-  if (seconds < day * 30) return `${Math.floor(seconds / day)} days ago`;
-  if (seconds < day * 365) return `${Math.floor(seconds / day / 30)} months ago`;
-  return `${Math.floor(seconds / day / 365)} years ago`;
+  const ago = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
+  if (seconds < 3600) return ago(Math.floor(seconds / 60), 'minute');
+  if (seconds < day) return ago(Math.floor(seconds / 3600), 'hour');
+  if (seconds < day * 30) return ago(Math.floor(seconds / day), 'day');
+  if (seconds < day * 365) return ago(Math.floor(seconds / day / 30), 'month');
+  return ago(Math.floor(seconds / day / 365), 'year');
 }
 
 /** Name the human, not the address (UX_SPEC "Copy principles"). */

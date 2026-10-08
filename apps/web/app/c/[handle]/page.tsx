@@ -4,6 +4,7 @@ import { Header, Footer } from '../../components/Chrome';
 import { formatEther } from 'viem';
 import { RecordRow, relativeTime } from '../../components/LiveRegistry';
 import { creatorByHandle, type CreatorPage } from '../../lib/indexer';
+import { Share } from '../../components/Share';
 
 /**
  * A creator's portfolio: every record registered under one name.
@@ -55,6 +56,10 @@ export default async function CreatorPage({ params }: { params: Promise<{ handle
               <a href={`https://testnet.monadexplorer.com/address/${creator.address}`} target="_blank" rel="noreferrer"
                  className="underline underline-offset-4">{creator.address} &#8599;</a>
             </p>
+            <div className="mt-6">
+              <Share path={`/c/${creator.handle}`} text={`My work on Grain: every image checkable on Monad, even after screenshots.`} />
+            </div>
+
             <Earnings creator={creator} />
 
             <h2 className="mt-12 text-sm font-medium">Images</h2>

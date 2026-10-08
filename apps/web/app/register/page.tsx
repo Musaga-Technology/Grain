@@ -13,6 +13,7 @@ import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/
 import { monadTestnet, CONTRACTS, registryAbi, creatorAbi } from '../lib/chain';
 import { handleOf, toHandle, availableHandle } from '../lib/creators';
 import { encodeWatermark, canWatermark, prefetch } from '../lib/trustmark';
+import { Share } from '../components/Share';
 import { nextRecordId } from '../lib/resolve-client';
 
 /**
@@ -372,9 +373,13 @@ export default function Register() {
                   the one that carries the mark. The original doesn&rsquo;t.
                 </p>
               </div>
-              <a href={`/r/${phase.recordId}`} className="grain-btn inline-block mt-7 px-6 py-3 rounded-full text-base font-medium">
-                See your record
-              </a>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <a href={`/r/${phase.recordId}`} className="grain-btn inline-block px-6 py-3 rounded-full text-base font-medium">
+                  See your record
+                </a>
+                <Share path={`/r/${phase.recordId}`} label="Share it"
+                       text="I just registered my work on Grain. Anyone can check who made it, even from a screenshot:" />
+              </div>
             </div>
           )}
 

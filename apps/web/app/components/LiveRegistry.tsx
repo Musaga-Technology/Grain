@@ -16,8 +16,8 @@ export function relativeTime(unixSeconds: number): string {
   if (s < 90) return 'moments ago';
   if (s < 3600) return `${Math.floor(s / 60)} min ago`;
   if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
-  if (s < 86400 * 30) return `${Math.floor(s / 86400)} days ago`;
-  return `${Math.floor(s / 86400 / 30)} months ago`;
+  if (s < 86400 * 30) { const d = Math.floor(s / 86400); return `${d} day${d === 1 ? '' : 's'} ago`; }
+  { const m = Math.floor(s / 86400 / 30); return `${m} month${m === 1 ? '' : 's'} ago`; }
 }
 
 export function RecordRow({ r, showCreator = true }: { r: IndexedRecord; showCreator?: boolean }) {
