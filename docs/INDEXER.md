@@ -5,10 +5,24 @@ against a registry holding **506 records**, all of them indexed.
 
 ## What it is for
 
-A read accelerator, not a source of truth. SPEC §7 requires the resolver to
-keep answering with this switched off, and it does — the chain-read path is
-built first and stays the one that is always correct. What the indexer removes
-is round trips.
+The app's primary read path — and never its source of truth. Every answer the
+indexer gives is either checked against the contract or has a chain fallback,
+so a wrong or stale index cannot change a verdict, and the product keeps
+working with it switched off (SPEC §7).
+
+| Where | What the indexer does | Without it |
+|---|---|---|
+| Verify | the LSH candidate fan-out, one query | 8 chain reads, ~11x slower |
+| Record page `/r/:id` | returns the manifest, block and tx in one query; the manifest is hashed and compared with the hash the contract stores | a log search over a 100-block window |
+| Creator page `/c/:handle` | every record under a name | **not possible** — the contracts cannot list a creator's records without a full scan; the page says the listing is unavailable |
+| Landing, "Recently registered" | the latest records and registry totals | **not possible** without a full scan; the section is left out |
+
+The last two are why the indexer is part of the product rather than an
+optimisation: "what has this person made" and "what was registered recently"
+have no cheap answer on chain at all.
+
+The app reads `NEXT_PUBLIC_ENVIO_GRAPHQL_URL`; every query has a 4 s timeout
+and returns null on any failure, which is what triggers the fallback.
 
 ## The candidate fan-out
 
@@ -40,6 +54,8 @@ joining back to `Record`.
 - `field_selection.transaction_fields: [hash]` is required. Transaction hashes
   are not delivered otherwise, and a record page needs one so a person can
   follow a registration to the chain themselves.
+- The record page shows which path served it ("Found via"), so the trust
+  model is visible rather than asserted.
 - Handler callbacks type-check as `any` under a standalone `tsc` run even
   though the `Global` augmentation resolves correctly. It is an inference quirk
   in `onEvent`, not a defect: the handlers are exercised by all 506 records

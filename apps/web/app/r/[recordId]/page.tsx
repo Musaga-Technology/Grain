@@ -75,7 +75,10 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
             <h1 style={{ fontFamily: 'var(--serif)' }} className="text-4xl sm:text-5xl leading-tight">
               Made by{' '}
               {/* Name the human, not the address. */}
-              <span className="whitespace-nowrap">{record.handle ? `@${record.handle}` : 'an unnamed creator'}</span>
+              {record.handle ? (
+                <Link href={`/c/${record.handle}`} className="whitespace-nowrap underline decoration-1 underline-offset-[6px]"
+                      style={{ textDecorationColor: 'var(--rule)' }}>@{record.handle}</Link>
+              ) : <span className="whitespace-nowrap">an unnamed creator</span>}
             </h1>
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
               registered {relativeTime(record.registeredAt)}
@@ -139,6 +142,12 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
               <dd className="font-mono text-[13px]">{recordId}</dd>
               <dt style={{ color: 'var(--ink-faint)' }}>Creator</dt>
               <dd className="font-mono text-[13px] break-all">{record.creator}</dd>
+              {record.source && (<>
+                <dt style={{ color: 'var(--ink-faint)' }}>Found via</dt>
+                <dd className="text-[15px]">
+                  {record.source === 'indexer' ? 'Envio indexer, checked against the contract' : 'a log search on chain'}
+                </dd>
+              </>)}
               <dt style={{ color: 'var(--ink-faint)' }}>Fingerprint</dt>
               <dd className="font-mono text-[13px] break-all">{record.fingerprint}</dd>
               {record.generator && (<>

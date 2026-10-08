@@ -64,3 +64,4 @@ target/
 # scripts/fetch-web-models.sh rather than committed.
 apps/web/public/models/
 apps/web/public/ort/
+PITCH_NOTES.md

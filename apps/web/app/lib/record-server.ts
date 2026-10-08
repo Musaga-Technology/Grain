@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import { createPublicClient, http, keccak256, parseAbi, parseAbiItem, type Hex } from 'viem';
 import { decodeCbor, verifyManifest, type GrainManifest } from '@grain/core';
 import { CONTRACTS, creatorAbi } from './chain';
+import { recordById } from './indexer';
 import deployments from '../../../../deployments/monad-testnet.json';
 
 /**
@@ -75,6 +76,8 @@ export interface RecordView {
   signatureValid?: boolean;
   /** Recorded, but not in Grain's manifest format. */
   manifestUnreadable?: boolean;
+  /** Where the manifest was found: the indexer, or a log search on chain. */
+  source?: 'indexer' | 'chain';
   manifest?: Record<string, unknown>;
 }
 
@@ -100,19 +103,35 @@ async function load(recordId: string): Promise<RecordView | null> {
   };
 
   try {
-    const { from, to } = await windowAt(Number(r.registeredAt));
-    const logs = await client.getLogs({
-      address: CONTRACTS.GrainRegistry, event: registered, args: { recordId: id }, fromBlock: from, toBlock: to,
-    });
-    const log = logs[0];
-    if (log?.args.manifest) {
-      view.blockNumber = log.blockNumber?.toString();
-      view.txHash = log.transactionHash ?? undefined;
-      view.manifestMatchesChain = keccak256(log.args.manifest) === r.manifestHash;
+    // The indexer answers in one query. It is not trusted for it: the manifest
+    // it returns is hashed and compared against the hash the contract holds, so
+    // a wrong or stale index cannot pass off a different manifest.
+    let manifestHex: Hex | undefined;
+    const indexed = await recordById(recordId);
+    if (indexed?.manifest) {
+      manifestHex = indexed.manifest as Hex;
+      view.blockNumber = String(indexed.blockNumber);
+      view.txHash = indexed.txHash as Hex;
+      view.source = 'indexer';
+    } else {
+      const { from, to } = await windowAt(Number(r.registeredAt));
+      const logs = await client.getLogs({
+        address: CONTRACTS.GrainRegistry, event: registered, args: { recordId: id }, fromBlock: from, toBlock: to,
+      });
+      const log = logs[0];
+      if (log?.args.manifest) {
+        manifestHex = log.args.manifest;
+        view.blockNumber = log.blockNumber?.toString();
+        view.txHash = log.transactionHash ?? undefined;
+        view.source = 'chain';
+      }
+    }
+    if (manifestHex) {
+      view.manifestMatchesChain = keccak256(manifestHex) === r.manifestHash;
 
       let m: Record<string, any>;
       try {
-        m = decodeCbor(new Uint8Array(Buffer.from(log.args.manifest.slice(2), 'hex'))) as Record<string, any>;
+        m = decodeCbor(new Uint8Array(Buffer.from(manifestHex.slice(2), 'hex'))) as Record<string, any>;
       } catch {
         // The registry accepts any bytes; it is the reader that interprets
         // them. Say so plainly rather than drop the section.

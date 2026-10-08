@@ -26,7 +26,7 @@ It is **not NFTs.** Records are found *by the content itself*, ten thousand copi
 flowchart LR
     A[Image dropped in] --> B[Fingerprint<br/>64-bit DCT hash]
     A --> C[Watermark decode<br/>TrustMark]
-    B --> D[LSH candidates<br/>read from the chain]
+    B --> D[LSH candidates<br/>Envio indexer, chain fallback]
     C --> E[Record the mark<br/>points to]
     D --> F{resolve}
     E --> F
@@ -39,6 +39,8 @@ flowchart LR
 **Two co-equal paths, run in parallel on every image.** A TrustMark watermark carries the record id; a perceptual fingerprint finds the record by what the picture looks like. Neither is a fallback — they fail in opposite directions, so each catches what the other drops (measured below).
 
 **The anti-spoof check.** A watermark payload is not authenticated: anyone can stamp any record id onto any image. So the manifest also stores the fingerprint, and if the mark says one thing and the picture says another, Grain reports **TAMPERED** instead of attributing someone else's work. That is what C2PA's own guidance prescribes.
+
+**Envio is the read path; the chain is the judge.** One indexed query replaces eight chain reads in every verify, and the indexer serves what the contracts cannot answer at all — a creator's portfolio at `/c/:handle` and the live feed of recent registrations. It is never trusted: manifests it returns are hashed against the contract, any result can be re-checked with `verify()`, and with the indexer down the product falls back to the chain. Details in [docs/INDEXER.md](docs/INDEXER.md).
 
 **Everything runs in the browser.** Watermarking, fingerprinting and resolution happen on the person's device and the image is never uploaded; the browser reads Monad directly. The only server code is a small faucet that funds a new passkey account's first transactions.
 
@@ -82,7 +84,7 @@ JPEG 20 defeats the watermark but not the fingerprint; a 10% crop defeats the fi
 | LSH recall, 1,000 records, ≤7 bits flipped | **100%** — the pigeonhole guarantee behind the 8 × 8 band geometry |
 | Verify, end to end in the browser | **~2 s** |
 | First answer on a cold first visit | **5.8 s** — the fingerprint answers while the watermark model downloads |
-| Candidate fan-out through the Envio indexer | **90 ms**, vs 980 ms reading 8 bands from the chain (measured locally; the public app reads the chain directly) |
+| Candidate fan-out through the Envio indexer | **90 ms**, vs 980 ms reading 8 bands from the chain |
 
 Gas figures in [docs/GAS.md](docs/GAS.md).
 
@@ -116,7 +118,7 @@ pnpm install
 ./scripts/fetch-web-models.sh        # TrustMark models + WASM runtime, served by the app
 pnpm --filter @grain/web dev
 
-node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 43 tests
+node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 45 tests
 cd packages/contracts && forge test                                          # 31 tests
 ```
 

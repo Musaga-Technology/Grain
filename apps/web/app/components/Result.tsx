@@ -93,7 +93,10 @@ export function Result({ result, onVerifyOnChain, chainDistance }: {
     <Shell>
       <h2 style={{ fontFamily: 'var(--serif)' }} className="text-4xl sm:text-5xl leading-tight">
         {uncertain ? 'Probably made by ' : 'Made by '}
-        <span className="whitespace-nowrap">{name}</span>
+        {record?.creatorHandle ? (
+          <a href={`/c/${record.creatorHandle}`} className="whitespace-nowrap underline decoration-1 underline-offset-[6px]"
+             style={{ textDecorationColor: 'var(--rule)' }}>{name}</a>
+        ) : <span className="whitespace-nowrap">{name}</span>}
       </h2>
 
       {record && (
@@ -115,6 +118,13 @@ export function Result({ result, onVerifyOnChain, chainDistance }: {
       </p>
 
       <VerifyOnChain onVerify={onVerifyOnChain} distance={chainDistance} />
+
+      {record && (
+        <a href={`/r/${record.recordId.toString()}`}
+           className="mt-6 inline-block text-[15px] underline underline-offset-4">
+          See the full record &rarr;
+        </a>
+      )}
     </Shell>
   );
 }

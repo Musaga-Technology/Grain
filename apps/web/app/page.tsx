@@ -4,6 +4,7 @@ import { Header, Footer } from './components/Chrome';
 import { Prefetch } from './components/Prefetch';
 import { HeroDemo } from './components/HeroDemo';
 import { RecordCard } from './components/RecordCard';
+import { LiveRegistry } from './components/LiveRegistry';
 
 /**
  * Landing page.
@@ -31,6 +32,8 @@ const STEPS = [
     illustration: '/illustrations/data.svg',
   },
 ];
+
+export const revalidate = 15;
 
 export default function Landing() {
   return (
@@ -111,6 +114,8 @@ export default function Landing() {
             </p>
           </div>
         </section>
+
+        <LiveRegistry />
       </main>
 
       <Footer />

@@ -8,6 +8,7 @@ import {
 import { CONTRACTS, monadTestnet } from './chain';
 import { decodeWatermark, decoderReady } from './trustmark';
 import { handleOf } from './creators';
+import { candidatesByBands, type IndexedRecord } from './indexer';
 
 /**
  * Resolution, entirely in the browser.
@@ -66,8 +67,32 @@ export async function readRecord(recordId: bigint): Promise<ResolvedRecord | nul
   };
 }
 
-/** The LSH fan-out: all 8 bands in parallel, unioned. */
+function fromIndexed(r: IndexedRecord): ResolvedRecord {
+  return {
+    recordId: BigInt(r.recordId),
+    creator: r.creator as `0x${string}`,
+    creatorHandle: r.creatorEntity?.handle ?? undefined,
+    fingerprint: BigInt(r.fingerprint),
+    registeredAt: r.registeredAt,
+    blockNumber: r.blockNumber,
+    supersededBy: r.supersededBy ? BigInt(r.supersededBy) : null,
+    revoked: r.revoked,
+  };
+}
+
+/**
+ * The LSH fan-out. Through the indexer it is one query over the eight band
+ * keys (~90 ms); if the indexer is unreachable it falls back to reading the
+ * eight buckets from the chain (~1 s) -- slower, never wrong.
+ */
 async function candidates(fp: bigint): Promise<ResolvedRecord[]> {
+  const keys = toBands(fp).map((value, band) => `${band}:${value}`);
+  const indexed = await candidatesByBands(keys);
+  if (indexed) return indexed.map(fromIndexed);
+  return candidatesFromChain(fp);
+}
+
+async function candidatesFromChain(fp: bigint): Promise<ResolvedRecord[]> {
   const buckets = await Promise.all(
     toBands(fp).map((value, band) =>
       chain().readContract({
@@ -173,5 +198,7 @@ async function attachHandles(r: Resolution): Promise<void> {
     : r.state === 'TAMPERED' ? [r.claimed]
     : r.state === 'UNCERTAIN' ? r.candidates.slice(0, 1)
     : [];
-  await Promise.all(records.map(async (rec) => { rec.creatorHandle = await handleOf(rec.creator); }));
+  await Promise.all(records.map(async (rec) => {
+    rec.creatorHandle ??= await handleOf(rec.creator);
+  }));
 }

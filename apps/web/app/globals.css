@@ -88,6 +88,15 @@ body {
 }
 .grain-float { animation: grain-float 6s ease-in-out infinite; }
 
+@keyframes grain-live {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 55%, transparent); }
+  100% { box-shadow: 0 0 0 7px transparent; }
+}
+.grain-live-dot {
+  width: 7px; height: 7px; border-radius: 999px; background: var(--brand);
+  animation: grain-live 1.6s ease-out infinite;
+}
+
 .grain-delay-1 { animation-delay: 80ms; }
 .grain-delay-2 { animation-delay: 160ms; }
 .grain-delay-3 { animation-delay: 240ms; }
