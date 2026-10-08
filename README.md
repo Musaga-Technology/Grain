@@ -40,7 +40,7 @@ flowchart LR
 
 **The anti-spoof check.** A watermark payload is not authenticated: anyone can stamp any record id onto any image. So the manifest also stores the fingerprint, and if the mark says one thing and the picture says another, Grain reports **TAMPERED** instead of attributing someone else's work. That is what C2PA's own guidance prescribes.
 
-**Envio is the read path; the chain is the judge.** One indexed query replaces eight chain reads in every verify, and the indexer serves what the contracts cannot answer at all — a creator's portfolio at `/c/:handle` and the live feed of recent registrations. It is never trusted: manifests it returns are hashed against the contract, any result can be re-checked with `verify()`, and with the indexer down the product falls back to the chain. Details in [docs/INDEXER.md](docs/INDEXER.md).
+**Envio is the read path; the chain is the judge.** Every lookup is answered by an Envio indexer and checked against the contracts — [how, in detail, below](#how-envio-powers-grain).
 
 **Everything runs in the browser.** Watermarking, fingerprinting and resolution happen on the person's device and the image is never uploaded; the browser reads Monad directly. The only server code is a small faucet that funds a new passkey account's first transactions.
 
@@ -54,6 +54,62 @@ flowchart LR
 4. **Nobody can retract your provenance**, and block order settles who registered first.
 
 Identity is built on **Mera**, Monad's passkey account layer: a photographer's account is an ordinary EOA derived from their Face ID or fingerprint, and recoverable wherever the passkey syncs. One passkey yields three keys through separate PRF namespaces — a signing identity, unlinkable per-channel keys, and an encryption key for private manifest fields.
+
+---
+
+## How Envio powers Grain
+
+A registry is only useful if you can search it. The contracts are built to *store* provenance cheaply and to *prove* an answer; they are not built to *search*. Envio HyperIndex is the layer that turns Grain's onchain events into something you can query in one round trip — and every screen that reads the registry is served by it.
+
+### Why the chain alone isn't enough
+
+Three properties of the contracts, each chosen for good reasons, make direct reads slow or impossible:
+
+1. **Manifests live in event data, not storage.** That is what makes a 16 KB manifest cost only 2.7× a 256 B one. But it means reading a manifest back is a log search — and Monad's public RPC caps `eth_getLogs` at 100 blocks per call, so finding one record's event means first estimating which 100 blocks to look in.
+2. **The fingerprint index is eight separate buckets.** Finding every record that might match an image means eight `queryBand` calls, then a `records()` read for every id they return.
+3. **Some questions have no onchain answer at all.** "What has @grain-samples registered?" and "What was registered in the last hour?" would mean reading every record ever made. There is no mapping to read, by design: indexes like those would make every registration more expensive for a question only readers ask.
+
+### What the indexer builds
+
+The indexer ([`packages/indexer`](packages/indexer)) follows five events across the three contracts and maintains four entities:
+
+| Event | Becomes |
+|---|---|
+| `GrainRegistry.ManifestRegistered` | a `Record` (fingerprint, creator, the full CBOR manifest, block, tx hash) plus **eight `FingerprintBand` rows** |
+| `GrainRegistry.ManifestSuperseded` / `ManifestRevoked` | the record's `supersededBy` / `revoked`, copied onto its band rows |
+| `CreatorRegistry.ProfileSet` | a `Creator` with handle, licence price and record count |
+| `LicenseRegistry.LicenseGranted` | a `License` |
+
+**The band rows are the core design decision.** The natural schema is an array of eight band values on each record, searched with an array-overlap operator. Instead, each band value is its own row keyed `band:value` (for example `3:217`), with `revoked` denormalised onto it. A fingerprint search becomes one indexed `key IN (8 keys)` lookup — a plain B-tree hit that returns the candidate records, their fingerprints and their creators' handles in a single GraphQL response.
+
+### Where it's used
+
+| Screen | Served by Envio | Without Envio |
+|---|---|---|
+| **Verify** — "who made this image?" | the candidate search: one query, **90 ms** | 8 band reads + a read per candidate, **980 ms** |
+| **Record page** `/r/:id` | the manifest, block and transaction in one query | an estimated block window, then a `getLogs` search |
+| **Creator page** `/c/:handle` | every record under a name, newest first | **not possible** without scanning every record |
+| **Landing** — "Recently registered" | the latest records and registry totals, live | **not possible** without scanning every record |
+| Register | — | writes go straight to the chain |
+
+The last two rows are why Envio is part of the product rather than an optimisation: a creator's portfolio and a live feed of the registry simply don't exist without it.
+
+### Why you don't have to trust it
+
+An indexer is a database someone runs, and Grain's whole argument is that provenance shouldn't rest on a database you have to trust. So the index *proposes* and the chain *decides*:
+
+- **Record pages re-read the record from contract storage** — creator, fingerprint, revocation — and take only the manifest from Envio. That manifest is hashed and compared with the `manifestHash` the contract stores before anything is shown. A wrong or tampered index cannot change what a record page says; it can only make the check fail, and the page shows that check.
+- **Every verify result has "verify on chain".** One click calls `FingerprintIndex.verify()` from the visitor's browser and shows the distance the contract computes between the record and the image in front of them. It never touches the indexer.
+- **The record page says where its data came from** — "Found via: Envio indexer, checked against the contract" — so the trust model is visible, not asserted.
+
+### When it's behind, or down
+
+- **Lag.** An index trails the chain by a few seconds. If Envio has no candidate close to an image, verify asks the chain before saying "no record", so an image registered moments ago is never reported as unregistered. A match returns straight from the index; only the not-found path pays for the check.
+- **Outage.** Every query has a 4-second timeout and falls back: verify and record pages go to the chain and keep working, and the creator page says the listing is temporarily unavailable rather than claiming the creator has no work.
+
+### Running it
+
+Envio Cloud deploys the indexer from this repository's `envio` branch (root directory `packages/indexer`). It reads Monad testnet through HyperSync, starting from the contracts' deployment block. The app reads the endpoint from `NEXT_PUBLIC_ENVIO_GRAPHQL_URL`; locally, `pnpm --filter @grain/indexer dev` runs the same indexer against the same contracts. Measurements and schema notes are in [docs/INDEXER.md](docs/INDEXER.md).
 
 ---
 
