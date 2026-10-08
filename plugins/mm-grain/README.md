@@ -53,11 +53,11 @@ Finds the creator, then sends them the amount through MetaMask's policy-gated wa
 
 ```
 $ mm grain pay ./downloaded.jpg 0.5 --dry-run
-Would send 0.5 on chain 143 to @grain-samples (0x5bFa…1a65), the creator of record 510. Nothing was sent.
+Would send 0.5 on chain 10143 to @grain-samples (0x5bFa…1a65), the creator of record 510. Nothing was sent.
 ```
 
 - **Strict on purpose.** It pays only on a clean `RESOLVED` match or an explicit record number. A forged or uncertain match is refused with the reason, and so is a record its creator has withdrawn.
-- **Any chain your wallet supports.** A Grain creator's account is an ordinary EOA derived from their passkey, so the same address receives on every EVM chain. The registry lives on Monad testnet; payments default to **Monad mainnet (143)**. Use `--chain-id` for another chain.
+- **Any chain your wallet supports.** A Grain creator's account is an ordinary EOA derived from their passkey, so the same address receives on every EVM chain. Payments default to **Monad testnet (10143)**, where the registry lives; `--chain-id 143` pays on Monad mainnet, or any other chain your wallet supports.
 - `--dry-run` shows the exact transaction without sending it.
 
 ### `mm grain record <id>` and `mm grain creator <handle>`

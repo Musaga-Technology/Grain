@@ -125,7 +125,7 @@ mm grain creator <handle>        everything a creator has registered (via Envio)
 ```
 
 - **Same answer as the website.** The plugin bundles Grain's own resolver and the site's TrustMark port, so the CLI and the site cannot disagree about an image. Each verdict carries the distance `FingerprintIndex.verify()` returned on chain.
-- **Find the human, then pay them.** A creator's Grain account is an ordinary EOA, so the same address receives on any EVM chain. The registry lives on Monad testnet; `pay` sends on Monad mainnet by default, through MetaMask's policy-gated executor.
+- **Find the human, then pay them.** A creator's Grain account is an ordinary EOA, so the same address receives on any EVM chain. `pay` sends on Monad testnet by default, where the registry lives, through MetaMask's policy-gated executor; `--chain-id` pays on any other chain the wallet supports.
 - **Strict about money.** `pay` acts only on a clean match or an explicit record number. A forged watermark, an uncertain match or a withdrawn record is refused with the reason.
 
 ---

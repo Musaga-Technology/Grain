@@ -1,16 +1,16 @@
 import {
   type CommandIO, InputFieldType, type InputSchema, PluginCommand, schemaToArgs, schemaToFlags,
 } from '@metamask/agent-wallet/plugin';
-import { MONAD_MAINNET, planPayment, type PaymentPlan } from '../../lib/payment.ts';
+import { MONAD_TESTNET, planPayment, type PaymentPlan } from '../../lib/payment.ts';
 import { who } from '../../lib/format.ts';
 
 /**
  * Pay the person who made an image.
  *
  * A Grain creator's account is an ordinary EOA, derived from their passkey, so
- * the same address can receive on any EVM chain. The registry lives on Monad
- * testnet; the payment goes on a chain the agent's MetaMask wallet supports --
- * Monad mainnet by default -- through MetaMask's own policy-gated executor.
+ * the same address can receive on any EVM chain. Payments default to Monad
+ * testnet, where the registry lives, and go through MetaMask's own policy-gated
+ * executor; --chain-id sends on any other chain the wallet supports.
  */
 
 const inputs = {
@@ -24,7 +24,7 @@ const inputs = {
   },
   chainId: {
     type: InputFieldType.Text, flag: 'chain-id', required: false, prompt: false,
-    message: 'Chain to pay on (default 143, Monad mainnet). Run `mm chains list` for options',
+    message: 'Chain to pay on (default 10143, Monad testnet, where the registry lives). Run `mm chains list` for options',
   },
   dryRun: {
     type: InputFieldType.Boolean, flag: 'dry-run', required: false, prompt: false,
@@ -41,7 +41,7 @@ export default class GrainPay extends PluginCommand<PayResult> {
   static override examples = [
     '<%= config.bin %> grain pay ./photo.jpg 0.5',
     '<%= config.bin %> grain pay 510 1 --dry-run --json',
-    '<%= config.bin %> grain pay https://example.com/art.png 0.25 --chain-id 143',
+    '<%= config.bin %> grain pay https://example.com/art.png 0.25 --chain-id 143   # pay on Monad mainnet',
   ];
 
   // Sending needs a signed-in, initialised MetaMask wallet: both defaults stay on.
@@ -51,7 +51,7 @@ export default class GrainPay extends PluginCommand<PayResult> {
 
   async execute(io: CommandIO): Promise<PayResult> {
     const { target, amount, chainId, dryRun } = await io.resolveInputs(inputs);
-    const plan = await planPayment(String(target), String(amount), chainId ? Number(chainId) : MONAD_MAINNET, (l) => io.progress(l));
+    const plan = await planPayment(String(target), String(amount), chainId ? Number(chainId) : MONAD_TESTNET, (l) => io.progress(l));
     if (dryRun) return { ...plan, sent: false };
 
     const executor = await this.ctx.walletExecutor(io, 'grain:pay');

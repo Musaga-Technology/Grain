@@ -14,7 +14,8 @@ import { loadImage } from './image.ts';
 import { decodeWatermark, loadDecoder } from './watermark.ts';
 import { recordUrl, toResult } from './format.ts';
 
-export const MONAD_MAINNET = 143;
+/** Where the registry lives, and so where payments go by default. */
+export const MONAD_TESTNET = 10143;
 
 export interface PaymentPlan {
   recordId: string;
@@ -27,7 +28,7 @@ export interface PaymentPlan {
 }
 
 export async function planPayment(
-  target: string, amount: string, chainId: number = MONAD_MAINNET,
+  target: string, amount: string, chainId: number = MONAD_TESTNET,
   progress: (label?: string) => void = () => {},
 ): Promise<PaymentPlan> {
   if (!Number.isInteger(chainId) || chainId <= 0) throw new Error('--chain-id must be a positive integer.');
