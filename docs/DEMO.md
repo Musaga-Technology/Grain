@@ -1,148 +1,103 @@
 # Demo script
 
-Target 3 minutes. Rehearse at least five times — the abuse sequence must be muscle
-memory, because fumbling it live is worse than not doing it.
+Three minutes. Every beat below has been run end to end in a real browser
+against the live deployment — nothing here is a promise.
 
-Record in one take if you can. Judges can tell when a provenance demo has been cut,
-and the irony is not lost on anyone.
+**Record it on [grain-rho.vercel.app](https://grain-rho.vercel.app)**, not
+localhost: passkeys need HTTPS, and judges should see the URL they can visit.
 
----
+## Before you record
 
-## Cold open (10s)
-
-No logo, no title card. Start on the verify page with a photo already in hand.
-
-> "This is a photograph. By the end of this video I'm going to destroy it five
-> different ways, and you'll still know who took it."
-
----
-
-## Act 1 — Register (30s)
-
-1. Drop the photo on `/register`.
-2. Type a title. Nothing else.
-3. Click **Register with Face ID**. One biometric prompt.
-4. Registered. Block number visible. Watermarked file downloads.
-
-> "One prompt. No seed phrase, no wallet connection, no network switch. That's the
-> whole onboarding — and there's no crypto vocabulary anywhere on this path."
-
-**Say the quiet part out loud:** no wallet UI appeared. Judges have watched forty
-demos that opened with a connect-wallet modal.
+- **Register with your own photo.** A photo you took, not a stock image — this
+  is a provenance product, and putting a name on someone else's photograph is
+  the one mistake it cannot make on camera.
+- **Do registration on your Android phone.** It is the device where the passkey
+  path is proven (PRF returned 32 bytes on `/setup`). Screen-record the phone.
+- **Open `/` and `/verify` once on the laptop beforehand.** The watermark checker
+  is 45 MB and is cached after the first visit; the first check on a fresh
+  browser answers by content in seconds and finishes the watermark check later.
+- **Prepare the copies for Act 2** from the downloaded `-grain.png`, so you are
+  not fiddling with an editor live.
 
 ---
 
-## Act 2 — Abuse it (90s)
+## Cold open — 10s
 
-Do all of this live, on camera, to the registered image. Never cut.
+Verify page, empty.
 
-**This sequence is measured, not hoped for.** Every row below comes from
-`docs/ROBUSTNESS.md`, run over 21 fixtures on 24 Sep.
+> "This is a photograph I took. I'm going to wreck it five ways, and you'll
+> still know who made it."
 
-| # | Attack | Measured | Which path wins |
-|---|---|---|---|
-| 1 | Screenshot it | 100% | both — distance 0 |
-| 2 | Crop 10% | 100% | **watermark** — fingerprint moves a median of 12 |
-| 3 | Crush to JPEG Q20 | 100% | **fingerprint** — watermark only survives 43% |
-| 4 | Downscale to 25% | 100% | both |
-| 5 | Run a filter over it | 95% | fingerprint |
+## Act 1 — Register — 30s, on the phone
 
-Drop each mangled copy into Verify. Each returns **Made by {name}**.
+1. `/register`, choose the photo.
+2. Type your name. The page previews it: *Made by @your-name*.
+3. **Register with your fingerprint.** One prompt.
+4. *Registered as @your-name.* The marked copy downloads automatically.
 
-Rows 2 and 3 are the sequence's whole argument and should be narrated
-explicitly: the crop is the case where *only* the watermark survives, and the
-JPEG crush is the case where *only* the fingerprint does. That is what "two
-co-equal paths" means, demonstrated rather than asserted.
+> "One fingerprint. No wallet, no seed phrase, no network to pick. The
+> watermark went in on my phone — the photo never left it."
 
-### Do not demo a 25% crop
+## Act 2 — Wreck it — 90s, on the laptop
 
-It fails — 19% resolve. The watermark is centre-cropped away and the
-fingerprint lands at median distance 24, which is inside the range where
-genuinely unrelated images sit. No threshold fixes it; at that distance the
-image really is a different image to a 64-bit global hash.
+Drop each copy into Verify. Say which path caught it each time — the honest mix
+is the argument.
 
-The original script had this beat and it would have failed live. If a judge
-asks where the system breaks, answer with this: it is a better answer than a
-claimed 100%, and the full matrix including the failures is in the README.
+| Copy | Expected | Say |
+|---|---|---|
+| Screenshot of it | Made by you — watermark and content | "both paths agree" |
+| Cropped about 10% | Made by you — **watermark** | "the crop broke the fingerprint; the watermark held" |
+| Saved as a low-quality JPEG | Made by you — **content** | "the compression killed the watermark; the picture itself still matched" |
+| Sent through WhatsApp and saved back | Made by you | "a real platform, real recompression" |
+| A filter applied | Made by you | |
 
-**Show which path won each time** — "that one was the watermark, this one the
-watermark was gone and it matched on content alone." The honest mix is more
-convincing than a claimed 100%, and it demonstrates that the two paths are
-co-equal rather than primary-and-fallback.
+> "C2PA calls this a durable content credential. What it doesn't say is who
+> runs the database you look it up in. This is that database, on Monad — and
+> the search you just watched ran in this browser, against the chain, with no
+> server of mine in between."
 
-> "The manifest is stripped out of every one of these files. C2PA calls the fix a
-> durable credential — a watermark or a fingerprint that survives the copy. What
-> C2PA doesn't say is who runs the database you look it up in. Right now that's
-> Adobe, or Digimarc. This is that database, on Monad, and nobody can delete your
-> row."
+Then click **verify on chain** on one result:
 
----
+> "And if you don't trust this website, ask the contract. It just returned the
+> distance itself."
 
-## Interlude — the scale beat (15s)
+**Do not demo a 25% crop.** It fails — 19% resolve. If a judge asks where it
+breaks, that's the answer, and the full table is in the README.
 
-Show the registry size on screen before Act 3. One sentence, no ceremony:
+## Act 3 — The attack — 30s
 
-> "There are ninety thousand images in this registry, and every one of those searches
-> just ran on chain, inside a block."
+**The best thirty seconds. Do not cut it.**
 
-This is the moment the Monad argument stops being a slide and becomes a thing the
-judges watched happen. Do not skip it and do not oversell it — say the number, move on.
+1. `/forge`. Enter your record number — it says whose mark you're borrowing.
+2. Pick a completely different photo. It copies your watermark onto it.
+3. Drop the forged file into Verify.
+4. **"This image is claiming someone else's credentials."**
 
----
+> "A watermark is just a number, and anyone can write any number. This picture
+> carries my mark — so a watermark-only system would say I made it. Grain
+> checks the picture against the fingerprint I registered, sees it's not mine,
+> and refuses."
 
-## Act 3 — The attack (30s)
+## Close — 20s
 
-**The best thirty seconds. Do not cut this for time.**
+Open your record page, `/r/<your record>`.
 
-1. Lift the watermark from the registered image, paste it onto a completely
-   different picture.
-2. Drop it in.
-3. **TAMPERED.** "It's carrying Ana's mark, but it isn't Ana's picture."
-4. Hit **verify on chain** so the contract itself returns the distance.
+> "This is the link I send to anyone who doubts me. Two checks, both against
+> the chain: the manifest is the one the contract recorded, and it was signed
+> with my key. No company can take it down."
 
-> "Watermarks can be transferred — that's a known attack, and most provenance demos
-> don't show it because most provenance demos don't handle it. The manifest carries
-> a fingerprint of the original. If the mark says one thing and the picture says
-> another, we refuse."
+> "Grain. C2PA defined the format. We built the part nobody owns."
 
 ---
 
-## Coda — the agent (30s)
+## If something goes wrong live
 
-Terminal:
+- **"Still checking for a hidden watermark"** — first visit on that browser;
+  it's downloading the 45 MB checker. Say so; it answers by content meanwhile.
+- **A copy resolves by content only** — expected for heavy compression. Narrate
+  it: "the watermark's gone on that one, the picture caught it."
+- **Passkey error on the laptop** — desktop Chrome saved the passkey to the
+  local profile. Do registration on the phone, as planned.
 
-```
-$ mm grain verify ./found-image.jpg
-  Made by @anaruiz · registered 12 days ago · licence 2 USDC
-
-$ mm grain license ./found-image.jpg
-  Paid @anaruiz 2 USDC on Monad · licence recorded · 0.4s
-```
-
-Then the photographer's `/sentinel` page: where their work appeared this week, and
-whether it was paid for.
-
-> "This is a MetaMask Agent Wallet plugin. The agent found an image, checked who
-> made it, and paid them — inside a spending limit it cannot exceed, on a wallet
-> that can't touch my main funds. The registry is what makes that payment possible,
-> because without it the agent has nobody to pay."
-
----
-
-## Close (10s)
-
-> "Grain. C2PA already defined the format. We built the part nobody owns."
-
----
-
-## If something breaks live
-
-- **Envio down** → the resolver falls back to direct chain reads. Say so and keep
-  going; it's a better moment than a rehearsed one.
-- **Watermark misses on a transformation** → expected on some, that's the point of
-  two paths. Narrate it: "watermark's gone on that one, content match caught it."
-- **PRF_UNAVAILABLE** → you are on the wrong browser. This is why Milestone 0
-  tests the demo machine.
-
-Never apologise for the honest failure modes. A provenance system that claims 100%
-recovery is lying, and the judges on this panel will know it.
+Never apologise for the honest failure modes. A provenance system claiming
+100% recovery is lying, and this panel will know.

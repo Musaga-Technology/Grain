@@ -1,67 +1,54 @@
 # Deploying
 
-Two pieces, two hosts, for one reason: **the TrustMark models must stay
-resident.** The decoder is 45 MB and the encoder 17 MB, and a serverless
-function reloads them on every invocation — which is the two seconds
-`packages/trustmarkd` exists to remove (docs/RESOLVER.md). So the resolver
-needs a container, and everything else is happy on Vercel.
+**The whole product runs on Vercel's free tier. There is no server to host.**
 
-| Piece | Host | Why |
-|---|---|---|
-| Next.js app | Vercel | Static and edge-friendly; no heavy runtime |
-| Resolver + daemon | Any container host (Fly, Railway, Render) | 95 MB of models held in memory |
-| Indexer | Envio Cloud | Managed HyperIndex |
+That was not the original design. The TrustMark models are 62 MB and must stay
+loaded, so the first architecture put watermarking in a resolver container —
+which needs about 1 GB of memory, more than any free host offers. Instead,
+watermarking, fingerprinting and resolution now run in the visitor's browser
+(onnxruntime-web, with Adobe's models served by the app itself), and the
+browser reads Monad directly. See [RESOLVER.md](RESOLVER.md) for the server
+path, which still works locally.
 
-## 1. Resolver
-
-```
-docker build -f packages/resolver/Dockerfile -t grain-resolver .
-docker run -p 8787:8787 -e RPC_TESTNET_ENDPOINT=<rpc> grain-resolver
-```
-
-The image builds the daemon from source and fetches variant Q models at build
-time, so nothing is downloaded at runtime.
-
-| Variable | Purpose |
+| Piece | Where |
 |---|---|
-| `RPC_TESTNET_ENDPOINT` | Monad testnet RPC |
-| `PORT` | defaults to 8787 |
+| Web app, models, WASM runtime | Vercel, project root `apps/web` |
+| Contracts | Monad testnet — `deployments/monad-testnet.json` |
+| Faucet for new creators | `apps/web/app/api/fund`, the only server code |
+| Indexer (optional accelerator) | Envio — see [INDEXER.md](INDEXER.md) |
 
-Health check: `GET /health` returns the chain id, head block and record count.
+## Deploy
 
-## 2. Web app
+```bash
+./scripts/fetch-web-models.sh     # models + runtime into apps/web/public (gitignored)
+vercel deploy --prod
+```
 
-Root directory `apps/web`. It is a pnpm workspace member, so the install and
-build commands in `apps/web/vercel.json` run from the repo root.
+The CLI upload must stay under Vercel Hobby's **100 MB**; the models and runtime
+are ~73 MB of it. `.vercelignore` keeps everything else out — the corpus, the
+fixtures, Rust builds.
 
 | Variable | Exposed | Purpose |
 |---|---|---|
-| `RESOLVER_URL` | server | Where `/api/prepare` proxies watermarking |
-| `NEXT_PUBLIC_RESOLVER_URL` | browser | Where `/verify` posts images |
-| `NEXT_PUBLIC_RPC_URL` | browser | Registration transactions and "verify on chain" |
-| `PRIVATE_KEY` | server | Funds new passkey accounts — see the warning below |
+| `NEXT_PUBLIC_RPC_URL` | browser | `https://testnet-rpc.monad.xyz`. Never a keyed RPC: `NEXT_PUBLIC_` values are shipped to every visitor |
+| `FAUCET_PRIVATE_KEY` | server, sensitive | the faucet wallet — **never** the deployer |
 
-## The faucet is the thing to watch
+## The faucet
 
-`/api/fund` exists because SPEC §6.2 makes `msg.sender` the creator and SPEC §0
-forbids crypto vocabulary: a passkey-derived account starts empty and a
-photographer cannot fund it. A relayer would record the relayer as the creator
-instead of the photographer, and meta-transactions need on-chain signature
-recovery the spec rules out.
+A passkey account starts empty, and the no-wallet promise means a photographer
+cannot fund it. A relayer would record the relayer as the creator; meta-
+transactions need on-chain signature recovery the contracts don't do. So the
+app funds a new account's first transactions: **0.05 MON**, enough for a name
+(~107k gas) and a registration (~95–150k), only when the balance is below 0.03.
 
-**On a public deployment this is a faucet, and it can be drained.** The balance
-floor stops repeat claims from one address but not fresh addresses; the hourly
-cap is in-memory, so it resets whenever the instance recycles. Both are speed
-bumps, not guarantees.
+**It is a public faucet, and it can be drained.** That is why it is a
+dedicated wallet holding a small balance (4 MON, about 80 creators) rather than
+the deployer, and why the grant is small. The hourly cap is in memory and
+resets when the instance recycles. Right for testnet; on mainnet someone has to
+pay, and the funding model is an open question.
 
-That trade is right on testnet, where the funds have no value and the
-alternative is no passkey onboarding at all. It is **not** right on mainnet, and
-the README should say so plainly rather than leave a judge to find it.
+Top it up from the deployer when it runs low:
 
-Keep the deployer topped up; budget roughly 0.02 MON per new creator.
-
-## What is not deployed
-
-`pnpm seed` and `scripts/robustness-matrix.ts` are local tools. They need the
-corpus and the fixtures, neither of which is redistributed — only fingerprints
-ever reach the chain.
+```bash
+cast send <faucet address> --value 2ether --private-key <deployer key> --rpc-url https://testnet-rpc.monad.xyz
+```
