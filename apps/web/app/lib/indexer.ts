@@ -50,6 +50,24 @@ export interface IndexedRecord {
   creatorEntity?: { handle: string | null } | null;
 }
 
+/**
+ * Accounts made while testing the app -- including two early test records that
+ * put a made-up name on stock photos. Testnet records cannot be deleted, so
+ * they are left out of the landing page's feed and creator count instead. They
+ * still resolve, and their record pages still work: this hides them from a
+ * showcase, it does not rewrite the registry.
+ */
+const TEST_ACCOUNTS = [
+  '0x22d14611bb72b8c55eb06a45aa5fbac6d079ca54', // record 507
+  '0x1661ac48eda15b7aadfa4dd820c56dee568589ce', // record 508
+  '0x4b5df5d9844cc7e21aa2dd1cc00d64da97ddf572', // @grain-qa, record 509
+  '0x26ee0db5dcd47623b9c7f515fa2df1e85f9355c5', // record 512
+  '0x82787b32e380fa5f5602547841fbd080080f9506', // record 513
+  '0x97f33c2e1813114b38e5c5ae5c208fd055e5e461', // name only
+  '0x36d21668c918fdb18478991d17307520c5727513', // name only
+  '0x23da2c297799cdf7a5cb1b61ac7560b8933da6e9', // name only
+];
+
 const RECORD_FIELDS = `recordId creator fingerprint registeredAt blockNumber txHash manifest revoked supersededBy
   creatorEntity { handle }`;
 
@@ -83,8 +101,9 @@ export async function licencesFor(recordId: string): Promise<{ licensee: string;
 
 export async function recentRecords(limit = 6): Promise<IndexedRecord[] | null> {
   const data = await query<{ Record: IndexedRecord[] }>(
-    `query($n:Int!){ Record(order_by:{recordId:desc}, limit:$n, where:{revoked:{_eq:false}}){ ${RECORD_FIELDS} } }`,
-    { n: limit },
+    `query($n:Int!, $hide:[String!]!){ Record(order_by:{recordId:desc}, limit:$n,
+       where:{revoked:{_eq:false}, creator:{_nin:$hide}}){ ${RECORD_FIELDS} } }`,
+    { n: limit, hide: TEST_ACCOUNTS },
   );
   return data?.Record ?? null;
 }
@@ -109,7 +128,9 @@ export async function creatorByHandle(handle: string): Promise<CreatorPage | nul
 
 export async function registryStats(): Promise<{ records: number; creators: number } | null> {
   const data = await query<{ Record: { recordId: string }[]; Creator: { id: string }[] }>(
-    `{ Record(order_by:{recordId:desc}, limit:1){ recordId } Creator(where:{handle:{_is_null:false}}){ id } }`,
+    `query($hide:[String!]!){ Record(order_by:{recordId:desc}, limit:1){ recordId }
+       Creator(where:{handle:{_is_null:false}, id:{_nin:$hide}}){ id } }`,
+    { hide: TEST_ACCOUNTS },
   );
   if (!data) return null;
   return { records: Number(data.Record[0]?.recordId ?? 0), creators: data.Creator.length };
