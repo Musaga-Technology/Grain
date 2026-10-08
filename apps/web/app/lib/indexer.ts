@@ -66,6 +66,8 @@ const TEST_ACCOUNTS = [
   '0x97f33c2e1813114b38e5c5ae5c208fd055e5e461', // name only
   '0x36d21668c918fdb18478991d17307520c5727513', // name only
   '0x23da2c297799cdf7a5cb1b61ac7560b8933da6e9', // name only
+  '0x31c7b16f59f1c5f5687ef27ba02aa7ae91fe1562', // @grain-batch-test
+  '0x19870645f6a7fefb8a6afb0a0ce3d705c495dfdb', // @grain-single-test
 ];
 
 const RECORD_FIELDS = `recordId creator fingerprint registeredAt blockNumber txHash manifest revoked supersededBy
