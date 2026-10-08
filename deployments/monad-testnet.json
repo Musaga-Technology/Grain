@@ -7,7 +7,8 @@
     "FingerprintIndex": "0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203",
     "GrainRegistry": "0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20",
     "CreatorRegistry": "0x783159d464B15180935222b342aEDc3Cf5ff2DE7",
-    "LicenseRegistry": "0x71260B7e406566D0fd880320b58537eE27895B1E"
+    "LicenseRegistry": "0x71260B7e406566D0fd880320b58537eE27895B1E",
+    "ActivityAnchor": "0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56"
   },
   "firstRegistration": {
     "recordId": 1,
@@ -21,5 +22,9 @@
     "jpegQ20Copy": 0,
     "croppedCopy10Percent": 8,
     "unrelatedImage": 31
+  },
+  "activityAnchor": {
+    "sealer": "0x9D0C096603aD6E9f5bcE0E0E449B62cc3DBf9F88",
+    "genesis": 1791473318
   }
 }

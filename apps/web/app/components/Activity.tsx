@@ -83,7 +83,8 @@ export function Activity({ handle, events }: { handle: string; events: ActivityI
         </ul>
       )}
       <p className="mt-3 text-xs" style={{ color: 'var(--ink-faint)' }}>
-        Reported by the browsers that ran each check: a record number and a verdict, never the image.
+        Reported by the browsers that ran each check: a record number and a verdict, never the image. The log is
+        sealed on Monad, so nobody can quietly rewrite it: <Link href="/sealed" className="underline underline-offset-2">check it</Link>.
       </p>
     </section>
   );

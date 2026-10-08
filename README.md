@@ -138,6 +138,7 @@ A registry people visit once doesn't build coverage. So Grain gives creators rea
 
 - **Earnings.** A creator's page (`/c/:handle`) shows MON earned and licences sold, each linked to its transaction. The figures are sums of `LicenseGranted` events, served by Envio.
 - **Activity.** Every time someone checks a copy of their work, the creator sees it: checks this week, and **forged copies caught**. "3 new since your last visit" is the reason to come back. A check reports only a record number and a verdict, never the image.
+- **Sealed on Monad.** The activity log is sealed on chain by `ActivityAnchor`, an append-only contract: each seal commits to the keccak256 of every event since the last one, and none can ever be replaced. At [/sealed](https://grain-on-monad.vercel.app/sealed), anyone's *own browser* downloads the log, hashes it and compares it with the seal it reads from Monad. Delete, edit or backdate one entry and the check fails, so not even Grain can rewrite a creator's history.
 - **Share cards.** Every record and creator link unfolds into a card naming the creator, with the image's fingerprint drawn large. Sharing your record is how other people find Grain.
 - **Batches.** Up to ten images with one passkey prompt, and the marked copies come back as one zip.
 - **The browser extension.** Right-click any image on the web, then "Who made this image?" ([`extensions/chrome`](extensions/chrome), 32 lines, whose only permission is the right-click menu). Or paste any image link on the check page.
@@ -187,7 +188,7 @@ Gas figures in [docs/GAS.md](docs/GAS.md).
 
 Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding assertion structure and the Soft Binding Resolution API shape; it does not run the `c2pa-rs` signing stack with certificates from the C2PA trust list. Our fingerprint algorithm, `grain.phash.v1`, is ours and not on the C2PA approved list — manifests say so with `algId: 0`. TrustMark Q is on it, as `algId: 4`.
 
-**Two things that aren't fully local.** Checking an image *by link* fetches that public image through Grain's server, because most sites don't let a browser read their images directly; the route is locked to public addresses, 15 MB and 10 seconds, and stores nothing. And the activity creators see is *reported by visitors' browsers*, not proven on chain: the creator is looked up from the chain, so a report can't name someone else, but a report itself can't be verified.
+**Two things that aren't fully local.** Checking an image *by link* fetches that public image through Grain's server, because most sites don't let a browser read their images directly; the route is locked to public addresses, 15 MB and 10 seconds, and stores nothing. And the activity creators see is *reported by visitors' browsers*: the creator is looked up from the chain, so a report can't name someone else, but no chain can see a check that happened privately in a browser, so a report itself can't be proven. What the chain does guarantee is that the log can't change after it's sealed.
 
 **A testnet trade-off we haven't solved for mainnet:** a passkey account starts with no funds, and the no-wallet promise means a photographer can't top it up. So a small faucet pays for a new creator's first transactions. That is fine on testnet; on mainnet someone has to pay, and the funding model there is an open question.
 
@@ -201,6 +202,7 @@ Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding
 | FingerprintIndex | [`0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203`](https://testnet.monadexplorer.com/address/0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203) |
 | CreatorRegistry | [`0x783159d464B15180935222b342aEDc3Cf5ff2DE7`](https://testnet.monadexplorer.com/address/0x783159d464B15180935222b342aEDc3Cf5ff2DE7) |
 | LicenseRegistry | [`0x71260B7e406566D0fd880320b58537eE27895B1E`](https://testnet.monadexplorer.com/address/0x71260B7e406566D0fd880320b58537eE27895B1E) |
+| ActivityAnchor | [`0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56`](https://testnet.monadexplorer.com/address/0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56) |
 
 ```bash
 pnpm install
@@ -208,7 +210,7 @@ pnpm install
 pnpm --filter @grain/web dev
 
 node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 45 tests
-cd packages/contracts && forge test                                          # 31 tests
+cd packages/contracts && forge test                                          # 38 tests
 ```
 
 Registering needs a passkey that supports the WebAuthn PRF extension — Safari with iCloud Keychain, Chrome with Google Password Manager, Android, or 1Password. Without one, Grain offers to keep a key in the browser instead, and says what that gives up before you choose it.
@@ -220,7 +222,7 @@ Registering needs a passkey that supports the WebAuthn PRF extension — Safari 
 | [docs/GAS.md](docs/GAS.md) | gas, and the LSH scaling ceiling |
 | [docs/INDEXER.md](docs/INDEXER.md) | the Envio indexer |
 | [packages/grain-core](packages/grain-core) | fingerprint, manifest, resolution — isomorphic TypeScript |
-| [packages/contracts](packages/contracts) | the four contracts |
+| [packages/contracts](packages/contracts) | the five contracts |
 | [apps/web](apps/web) | the app, including the browser TrustMark port |
 | [plugins/mm-grain](plugins/mm-grain) | the MetaMask Agent Wallet plugin |
 | [extensions/chrome](extensions/chrome) | the browser extension |

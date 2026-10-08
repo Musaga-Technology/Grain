@@ -4,6 +4,8 @@
   "buildCommand": "cd ../.. && pnpm --filter @grain/web build",
   "installCommand": "cd ../.. && pnpm install",
   "functions": {
-    "app/api/prepare/route.ts": { "maxDuration": 60 }
-  }
+    "app/api/seal/route.ts": { "maxDuration": 60 },
+    "app/api/fetch-image/route.ts": { "maxDuration": 30 }
+  },
+  "crons": [{ "path": "/api/seal", "schedule": "0 4 * * *" }]
 }

@@ -1,5 +1,6 @@
 import 'server-only';
 import { list, put } from '@vercel/blob';
+import type { LogEvent } from './seal-format';
 
 /**
  * What happens to a creator's work while they are away: how often it is
@@ -57,3 +58,24 @@ async function readActivity(creator: string): Promise<ActivityEvent[]> {
  * the list calls, and a second cache layer only made the page later.
  */
 export const activityFor = (creator: string) => readActivity(creator).catch(() => null);
+
+/**
+ * Every event, across all creators, in the window (from, until] -- what one
+ * seal covers. Throws rather than returning a partial list: sealing an
+ * incomplete window would make an honest log look tampered with.
+ */
+export async function eventsInWindow(from: number, until: number): Promise<LogEvent[]> {
+  const events: LogEvent[] = [];
+  let cursor: string | undefined;
+  do {
+    const res = await list({ prefix: `${ROOT}/`, limit: 1000, cursor });
+    for (const b of res.blobs) {
+      const m = b.pathname.match(/^[^/]+\/(0x[0-9a-f]{40})\/(\d+)-(\d+)-(RESOLVED|UNCERTAIN|TAMPERED)-([a-z0-9]+)$/);
+      if (!m) continue;
+      const at = Number(m[3]);
+      if (at > from && at <= until) events.push({ creator: m[1], recordId: m[2], at, verdict: m[4], nonce: m[5] });
+    }
+    cursor = res.hasMore ? res.cursor : undefined;
+  } while (cursor);
+  return events;
+}
