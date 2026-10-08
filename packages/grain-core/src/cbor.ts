@@ -90,3 +90,59 @@ export function encodeCbor(value: CborValue): Uint8Array {
 
   throw new Error(`unsupported CBOR type: ${typeof value}`);
 }
+
+/**
+ * Decoder for the same subset the encoder writes.
+ *
+ * Integers come back as bigint when they exceed Number's safe range, so a
+ * uint64 recordId survives a round trip intact. Anything outside the subset
+ * throws rather than guessing, for the same reason the encoder does.
+ */
+export function decodeCbor(bytes: Uint8Array): CborValue {
+  let pos = 0;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  const readArg = (info: number): bigint => {
+    if (info < 24) return BigInt(info);
+    if (info === 24) return BigInt(bytes[pos++]);
+    if (info === 25) { const v = view.getUint16(pos); pos += 2; return BigInt(v); }
+    if (info === 26) { const v = view.getUint32(pos); pos += 4; return BigInt(v); }
+    if (info === 27) { const v = view.getBigUint64(pos); pos += 8; return v; }
+    throw new Error(`unsupported CBOR length encoding ${info}`);
+  };
+  const num = (v: bigint): number | bigint => (v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : v);
+
+  const item = (): CborValue => {
+    if (pos >= bytes.length) throw new Error('truncated CBOR');
+    const head = bytes[pos++];
+    const major = head >> 5, info = head & 0x1f;
+    switch (major) {
+      case 0: return num(readArg(info));
+      case 1: { const v = -1n - readArg(info); return v >= BigInt(Number.MIN_SAFE_INTEGER) ? Number(v) : v; }
+      case 2: { const n = Number(readArg(info)); const b = bytes.slice(pos, pos + n); pos += n; return b; }
+      case 3: { const n = Number(readArg(info)); const s = new TextDecoder().decode(bytes.subarray(pos, pos + n)); pos += n; return s; }
+      case 4: { const n = Number(readArg(info)); return Array.from({ length: n }, () => item()); }
+      case 5: {
+        const n = Number(readArg(info));
+        const out: Record<string, CborValue> = {};
+        for (let i = 0; i < n; i++) {
+          const k = item();
+          if (typeof k !== 'string') throw new Error('only text map keys are supported');
+          out[k] = item();
+        }
+        return out;
+      }
+      case 7:
+        if (info === 20) return false;
+        if (info === 21) return true;
+        if (info === 22) return null;
+        throw new Error(`unsupported CBOR simple value ${info}`);
+      default:
+        throw new Error(`unsupported CBOR major type ${major}`);
+    }
+  };
+
+  const value = item();
+  if (pos !== bytes.length) throw new Error('trailing bytes after CBOR value');
+  return value;
+}

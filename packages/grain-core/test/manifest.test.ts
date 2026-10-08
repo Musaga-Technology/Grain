@@ -104,3 +104,21 @@ test('signing with the wrong key is refused rather than producing a bad manifest
   const m = buildManifest({ recordId: 1n, creator: '0x0000000000000000000000000000000000000001', fingerprint: 1n });
   await assert.rejects(() => signManifest(m, KEY), /does not match manifest creator/);
 });
+
+test('CBOR decodes what it encodes, including a uint64 recordId', async () => {
+  const { decodeCbor } = await import('../src/index.ts');
+  const signed = await signManifest(
+    buildManifest({ recordId: 1099511627775n, creator: account.address, fingerprint: 0xdeadbeefn, title: 'Harbour at dusk' }),
+    KEY,
+  );
+  const back = decodeCbor(encodeCbor(signed as never)) as Record<string, any>;
+  assert.equal(back.recordId, 1099511627775, 'fits Number safely and round-trips');
+  assert.equal(back.assertions.title, 'Harbour at dusk');
+  assert.equal(back.signature, signed.signature);
+  assert.equal(back.assertions.softBindings.length, 2);
+});
+
+test('CBOR keeps integers past 2^53 as bigint', async () => {
+  const { decodeCbor } = await import('../src/index.ts');
+  assert.equal(decodeCbor(encodeCbor(2n ** 63n)), 2n ** 63n);
+});

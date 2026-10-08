@@ -22,7 +22,7 @@ export { decodePNG } from './png.ts';
 export { decodeImage, sniffFormat, encodeJPEG, DEFAULT_MAX_DECODE_MB, type ImageFormat, type DecodeOptions } from './decode.ts';
 export { encodePNG } from './png-encode.ts';
 export { resize, scale, fitWithin, crop, cropFraction, flattenOnWhite, contentBounds, trimUniformBorder, gaussianBlur, socialFilter } from './transforms.ts';
-export { encodeCbor, type CborValue } from './cbor.ts';
+export { encodeCbor, decodeCbor, type CborValue } from './cbor.ts';
 export {
   buildManifest, encodeManifest, encodeSignedManifest, manifestHash,
   signManifest, signManifestWith, verifyManifest,

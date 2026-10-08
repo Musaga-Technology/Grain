@@ -1,66 +1,57 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createPublicClient, http, parseAbi } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
-import { CONTRACTS, creatorAbi } from '../../lib/chain';
+import { loadRecord } from '../../lib/record-server';
 
 /**
  * A permanent, shareable record page.
  *
  * This is what a creator sends to someone who doubts them, so it has to be
- * legible to a stranger with no context. Open Graph tags matter more than they
- * look: the disproportionate effect is when a judge pastes the link somewhere.
+ * legible to a stranger with no context -- and checkable by one who distrusts
+ * this website. Everything shown here is read from the chain, and the two
+ * checks say what that buys: the manifest is the one the contract recorded,
+ * and it was signed by the creator's key.
  */
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
-const registryAbi = parseAbi([
-  'function records(uint64) view returns ((address creator, uint64 fingerprint, bytes32 manifestHash, uint40 registeredAt, uint64 supersededBy, bool revoked))',
-]);
-
-async function loadRecord(recordId: string) {
-  try {
-    const client = createPublicClient({ transport: http(process.env.NEXT_PUBLIC_RPC_URL) });
-    const r = await client.readContract({
-      address: CONTRACTS.GrainRegistry, abi: registryAbi, functionName: 'records',
-      args: [BigInt(recordId)],
-    });
-    if (r.creator === '0x0000000000000000000000000000000000000000') return null;
-    const profile = await client.readContract({
-      address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'creators', args: [r.creator],
-    }).catch(() => null);
-    return { ...r, handle: profile?.handle || undefined };
-  } catch {
-    return null;
-  }
-}
+const EXPLORER = 'https://testnet.monadexplorer.com';
 
 export async function generateMetadata({ params }: { params: Promise<{ recordId: string }> }): Promise<Metadata> {
   const { recordId } = await params;
-  const record = await loadRecord(recordId);
-  const who = record?.handle ? `@${record.handle}` : 'an unnamed creator';
-  const title = record ? `Made by ${who} · Grain` : `Record ${recordId} · Grain`;
-  const description = record
+  const r = await loadRecord(recordId).catch(() => null);
+  const who = r?.handle ? `@${r.handle}` : 'an unnamed creator';
+  const title = r ? `${r.title ? `${r.title} — ` : ''}made by ${who} · Grain` : `Record ${recordId} · Grain`;
+  const description = r
     ? `Record ${recordId} on Grain, the open provenance registry. Anyone can check it against the chain.`
-    : 'A registered image on Grain, the open provenance registry.';
+    : 'A record on Grain, the open provenance registry.';
   return { title, description, openGraph: { title, description, type: 'article' } };
 }
 
 function relativeTime(unixSeconds: number): string {
   const s = Math.max(0, Math.floor(Date.now() / 1000) - unixSeconds);
-  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))} minutes ago`;
+  if (s < 90) return 'moments ago';
+  if (s < 3600) return `${Math.floor(s / 60)} minutes ago`;
   if (s < 86400) return `${Math.floor(s / 3600)} hours ago`;
   if (s < 86400 * 30) return `${Math.floor(s / 86400)} days ago`;
   return `${Math.floor(s / 86400 / 30)} months ago`;
 }
 
-function shortAddress(a: string) {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
+function Check({ ok, children }: { ok: boolean | undefined; children: React.ReactNode }) {
+  if (ok === undefined) return null;
+  return (
+    <li className="flex gap-3 text-[15px]">
+      <span aria-hidden className="w-4 shrink-0" style={{ color: ok ? 'var(--brand)' : 'var(--accent)' }}>
+        {ok ? '✓' : '✕'}
+      </span>
+      <span>{children}</span>
+    </li>
+  );
 }
 
 export default async function RecordPage({ params }: { params: Promise<{ recordId: string }> }) {
   const { recordId } = await params;
-  const record = await loadRecord(recordId);
+  const record = /^\d+$/.test(recordId) ? await loadRecord(recordId).catch(() => null) : null;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -68,9 +59,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
       <main className="flex-1 mx-auto w-full max-w-xl px-5 py-14 sm:py-20">
         {!record ? (
           <div className="text-center">
-            <h1 style={{ fontFamily: 'var(--serif)' }} className="text-3xl sm:text-4xl">
-              No record {recordId}
-            </h1>
+            <h1 style={{ fontFamily: 'var(--serif)' }} className="text-3xl sm:text-4xl">No record {recordId}</h1>
             <p className="mt-4" style={{ color: 'var(--ink-muted)' }}>
               Nothing has been registered under that number yet.
             </p>
@@ -80,14 +69,25 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
           </div>
         ) : (
           <article className="grain-rise">
+            {record.title && (
+              <p className="text-base mb-3" style={{ color: 'var(--ink-muted)' }}>&ldquo;{record.title}&rdquo;</p>
+            )}
             <h1 style={{ fontFamily: 'var(--serif)' }} className="text-4xl sm:text-5xl leading-tight">
               Made by{' '}
-              {/* Name the human, not the address. Fall back to a label rather
-                  than showing 0x1234 as if it were a name. */}
+              {/* Name the human, not the address. */}
               <span className="whitespace-nowrap">{record.handle ? `@${record.handle}` : 'an unnamed creator'}</span>
             </h1>
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
-              registered {relativeTime(Number(record.registeredAt))}
+              registered {relativeTime(record.registeredAt)}
+              {record.blockNumber && record.txHash && (
+                <>
+                  {' · '}
+                  <a href={`${EXPLORER}/tx/${record.txHash}`} target="_blank" rel="noreferrer"
+                     className="text-sm underline underline-offset-4" style={{ color: 'var(--ink-faint)' }}>
+                    block {Number(record.blockNumber).toLocaleString()} &#8599;
+                  </a>
+                </>
+              )}
             </p>
 
             {record.revoked && (
@@ -96,8 +96,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
                 The creator has withdrawn this record.
               </p>
             )}
-
-            {record.supersededBy !== 0n && (
+            {record.supersededBy && (
               <p className="mt-6 text-[15px]" style={{ color: 'var(--ink-muted)' }}>
                 This version has been edited since.{' '}
                 <Link href={`/r/${record.supersededBy}`} className="underline underline-offset-4">
@@ -106,23 +105,66 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
               </p>
             )}
 
+            <ul className="mt-9 space-y-2.5">
+              <Check ok={record.manifestMatchesChain}>
+                The manifest is the one the contract recorded
+              </Check>
+              <Check ok={record.signatureValid}>
+                It was signed by the creator&rsquo;s key
+              </Check>
+              {record.manifestUnreadable && (
+                <li className="flex gap-3 text-[15px]">
+                  <span aria-hidden className="w-4 shrink-0" style={{ color: 'var(--ink-faint)' }}>·</span>
+                  <span style={{ color: 'var(--ink-muted)' }}>
+                    Its manifest isn&rsquo;t in Grain&rsquo;s format, so there is no signature to check.
+                  </span>
+                </li>
+              )}
+              {record.watermarked !== undefined && (
+                <li className="flex gap-3 text-[15px]">
+                  <span aria-hidden className="w-4 shrink-0" style={{ color: 'var(--ink-faint)' }}>·</span>
+                  <span>
+                    {record.watermarked
+                      ? 'Carries an invisible TrustMark watermark, and a content fingerprint'
+                      : 'Found by content fingerprint (no watermark on this one)'}
+                  </span>
+                </li>
+              )}
+            </ul>
+
             <hr className="my-9 border-0 border-t" style={{ borderColor: 'var(--rule)' }} />
 
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-[15px]">
               <dt style={{ color: 'var(--ink-faint)' }}>Record</dt>
               <dd className="font-mono text-[13px]">{recordId}</dd>
               <dt style={{ color: 'var(--ink-faint)' }}>Creator</dt>
-              <dd className="font-mono text-[13px]">{shortAddress(record.creator)}</dd>
+              <dd className="font-mono text-[13px] break-all">{record.creator}</dd>
               <dt style={{ color: 'var(--ink-faint)' }}>Fingerprint</dt>
-              <dd className="font-mono text-[13px] break-all">
-                0x{record.fingerprint.toString(16).padStart(16, '0')}
-              </dd>
+              <dd className="font-mono text-[13px] break-all">{record.fingerprint}</dd>
+              {record.generator && (<>
+                <dt style={{ color: 'var(--ink-faint)' }}>Made with</dt>
+                <dd className="text-[15px]">{record.generator}</dd>
+              </>)}
             </dl>
 
-            <p className="mt-9 text-sm" style={{ color: 'var(--ink-faint)' }}>
-              Anyone can confirm this against the chain — the registry is public and the
-              record cannot be retracted by anyone but its creator.
-            </p>
+            {record.manifest && (
+              <details className="mt-8">
+                <summary className="cursor-pointer text-sm underline underline-offset-4" style={{ color: 'var(--ink-faint)' }}>
+                  show the raw manifest
+                </summary>
+                <pre className="mt-4 p-4 rounded-lg text-[12px] overflow-x-auto border"
+                     style={{ background: 'var(--surface)', borderColor: 'var(--rule)' }}>
+                  {JSON.stringify(record.manifest, null, 2)}
+                </pre>
+              </details>
+            )}
+
+            <div className="mt-12 rounded-lg px-5 py-4" style={{ background: 'var(--brand-soft)' }}>
+              <p className="text-[15px]">Have a copy of this image?</p>
+              <Link href="/verify" className="mt-1 inline-block text-[15px] underline underline-offset-4">
+                Check whether it&rsquo;s this one &rarr;
+              </Link>
+            </div>
           </article>
         )}
       </main>
