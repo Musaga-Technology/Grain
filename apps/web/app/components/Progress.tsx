@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * A progress line, not a spinner (UX_SPEC "Processing").
+ * A progress line, not a spinner.
  *
  * The three steps are truthful -- they map to image decode, TrustMark decode,
  * and the fingerprint fan-out. Never a percentage bar for work that cannot be

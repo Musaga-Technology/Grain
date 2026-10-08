@@ -119,7 +119,7 @@ export default function Verify() {
   const handle = useCallback(async (picked: File, sample?: Sample) => {
     const file = await readable(picked);
     if (!file) {
-      // Plain language, never a MIME type (UX_SPEC "Input").
+      // Plain language, never a MIME type.
       setPhase({ kind: 'error', message: "Grain can't read that file as an image. Try a PNG or JPEG." });
       return;
     }

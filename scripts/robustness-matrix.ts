@@ -2,8 +2,7 @@
  * Milestone 0 robustness matrix.
  *
  * For each fixture: embed a watermark, take the WATERMARKED file as the
- * reference (SPEC.md §2 -- the anti-spoof check compares against the
- * watermark-bearing asset, and embedding already costs ~2 bits), then apply
+ * reference, then apply
  * each transform and record whether the watermark still decodes and how far
  * the fingerprint moved.
  *

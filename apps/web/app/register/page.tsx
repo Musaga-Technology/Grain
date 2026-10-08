@@ -21,7 +21,7 @@ import { nextRecordId } from '../lib/resolve-client';
  * Register an image.
  *
  * The entire flow is: choose image -> one biometric prompt -> done. Anything
- * else added here is a mistake (UX_SPEC /register).
+ * else added here is a mistake.
  *
  * The ordering is forced by measurement, not preference. The watermark carries
  * the recordId, so the id must be reserved first. The fingerprint that goes on
@@ -60,7 +60,7 @@ export default function Register() {
   // Optional, in MON. Per creator, not per image: that is how the contract stores it.
   const [price, setPrice] = useState('');
   // Asked once. A returning creator already has a name on chain, and the app
-  // knows which visit this is without asking (UX_SPEC /register).
+  // knows which visit this is without asking.
   const [firstVisit, setFirstVisit] = useState(true);
   useEffect(() => { setFirstVisit(!storedCredential()); }, []);
   const [buttonLabel, setButtonLabel] = useState('Register with your passkey');
@@ -69,7 +69,7 @@ export default function Register() {
   useEffect(() => { prefetch('register'); }, []);
 
   /*
-   * Name the prompt the person is about to see (UX_SPEC /register). Promising
+   * Name the prompt the person is about to see. Promising
    * Face ID on a machine without it is a small lie that makes the real prompt
    * -- a QR code, a password manager -- look like something went wrong.
    */

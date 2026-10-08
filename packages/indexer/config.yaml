@@ -1,8 +1,8 @@
 name: grain
 description: >-
-  Read accelerator for the Grain registry. The chain stays the source of truth:
-  SPEC.md §7 requires the resolver to keep answering with this indexer down, and
-  that fallback is demonstrated rather than claimed.
+  The read path for the Grain registry. The chain stays the source of truth:
+  every read falls back to the chain with this indexer down, and that fallback
+  is demonstrated rather than claimed.
 
 # Transaction hashes are not delivered unless requested. A record page needs
 # one so a person can follow the registration to the chain themselves, which is
@@ -30,6 +30,13 @@ contracts:
     events:
       - event: LicenseGranted(uint64 indexed recordId, address indexed licensee, address indexed creator, uint256 amountWei, uint40 grantedAt)
 
+  # Seals of the off-chain activity log. Indexed so /sealed can list each seal
+  # with its transaction; the check itself still reads the root from the chain.
+  - name: ActivityAnchor
+    handler: src/EventHandlers.ts
+    events:
+      - event: Sealed(uint256 indexed index, uint64 from, uint64 until, uint32 events, bytes32 root)
+
 chains:
   - id: 10143 # Monad testnet
     start_block: 65176523 # the deployment block; nothing exists before it
@@ -40,3 +47,5 @@ chains:
         address: "0x783159d464B15180935222b342aEDc3Cf5ff2DE7"
       - name: LicenseRegistry
         address: "0x71260B7e406566D0fd880320b58537eE27895B1E"
+      - name: ActivityAnchor
+        address: "0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56"

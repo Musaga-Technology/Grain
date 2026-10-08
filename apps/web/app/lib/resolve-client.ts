@@ -118,7 +118,7 @@ export interface LocalResolution {
 }
 
 /**
- * Both paths, in parallel, on every image -- neither is a fallback (SPEC.md §2).
+ * Both paths, in parallel, on every image -- neither is a fallback.
  * The fingerprint fan-out and the watermark decode share one decoded image and
  * race each other; resolve() then applies the anti-spoof cross-check, which is
  * what turns a transferred watermark into TAMPERED rather than a false match.
@@ -196,7 +196,7 @@ export async function nextRecordId(): Promise<bigint> {
   });
 }
 
-/** Name the human, not the address (UX_SPEC copy principles). */
+/** Name the human, not the address. */
 async function attachHandles(r: Resolution): Promise<void> {
   const records: ResolvedRecord[] =
     r.state === 'RESOLVED' ? [r.record]

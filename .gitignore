@@ -65,3 +65,9 @@ target/
 apps/web/public/models/
 apps/web/public/ort/
 PITCH_NOTES.md
+
+# The original build kit: design notes written for planning, including demo
+# coaching. Superseded by the README and docs/, which describe what was built.
+SPEC.md
+UX_SPEC.md
+docs/DEMO.md

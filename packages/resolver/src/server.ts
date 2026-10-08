@@ -7,7 +7,7 @@ import { Chain } from './chain.ts';
 import { decodeWatermark, embedWatermark } from './watermark.ts';
 
 /**
- * C2PA Soft Binding Resolution API (SPEC.md §7).
+ * C2PA Soft Binding Resolution API.
  *
  * The API shape follows a published specification rather than an invented
  * endpoint, so an existing C2PA client can point at Grain unmodified. That is
@@ -102,7 +102,7 @@ app.post('/v1/resolve', async (c) => {
   }
 
   // Both paths, in parallel, on every request -- neither is a fallback
-  // (SPEC.md §2). The watermark decode needs only the raw bytes, so it starts
+  //. The watermark decode needs only the raw bytes, so it starts
   // immediately rather than waiting on the fingerprint: measured at ~2s against
   // ~0.6s to fingerprint, making it the critical path either way.
   const watermarkPromise = decodeWatermark(bytes, wm);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 /// @title IGrainRegistry
 /// @notice Onchain C2PA manifest repository. Records are keyed by a sequential
 ///         uint64 recordId because that id must fit inside a TrustMark watermark
-///         payload (see SPEC.md 5.2 — capacity is measured in Milestone 0).
+///         payload.
 /// @dev    Manifests live in EVENT DATA, not contract storage. Storage holds only
 ///         the hash. Event data is permanent chain history; contract storage would
 ///         only add contract-readable access that nothing in this system needs.
@@ -46,7 +46,7 @@ interface IGrainRegistry {
     ///         constraint. The watermark carries the recordId, so it must be
     ///         embedded before registration; and the registered fingerprint has
     ///         to be the WATERMARKED file's, because that is what the anti-spoof
-    ///         check compares against (SPEC.md 2) and embedding shifts the
+    ///         check compares against and embedding shifts the
     ///         fingerprint by up to 4 bits of a 7-bit budget. So the client
     ///         reads nextRecordId, embeds, fingerprints the watermarked file,
     ///         and registers -- reverting if someone else took the id first,

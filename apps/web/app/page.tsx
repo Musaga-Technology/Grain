@@ -9,10 +9,10 @@ import { LiveRegistry } from './components/LiveRegistry';
 /**
  * Landing page.
  *
- * UX_SPEC puts the verify tool at `/` with one line and nothing else. That
- * assumes the visitor already knows what Grain is, which a judge arriving cold
- * does not. So the explanation lives here and the tool lives at /verify, where
- * it stays uncluttered.
+ * The tool could live at `/` with one line and nothing else, but that assumes
+ * the visitor already knows what Grain is, and someone arriving cold does not.
+ * So the explanation lives here and the tool lives at /verify, where it stays
+ * uncluttered.
  */
 
 const STEPS = [

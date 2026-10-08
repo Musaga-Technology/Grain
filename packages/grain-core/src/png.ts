@@ -1,5 +1,5 @@
 // fflate rather than node:zlib: grain-core must run identically in the browser
-// and in Node (SPEC.md §4), and a Node-only codec would quietly break the
+// and in Node, and a Node-only codec would quietly break the
 // isomorphism the whole determinism argument rests on.
 // unzlibSync, not inflateSync: PNG's IDAT stream is zlib-wrapped (RFC 1950),
 // not raw deflate (RFC 1951). fflate distinguishes them where node:zlib's

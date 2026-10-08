@@ -4,13 +4,13 @@ import { encodeCbor, type CborValue } from './cbor.ts';
 import { TRUSTMARK_ALG_ID } from './watermark.ts';
 
 /**
- * C2PA-COMPATIBLE manifest (SPEC.md §5.3).
+ * C2PA-COMPATIBLE manifest.
  *
  * Compatible, not conformant: the soft binding assertion structure and the
  * Soft Binding Resolution API shape follow the spec, but this does not run the
  * c2pa-rs signing stack with X.509 certificates from the C2PA trust list. That
- * distinction belongs in the README verbatim -- overclaiming to judges who know
- * the spec costs more than the gap does.
+ * distinction is stated in the README verbatim: overclaiming to anyone who
+ * knows the spec costs more than the gap does.
  */
 
 export const GRAIN_PHASH_ALG = 'grain.phash.v1';
@@ -60,7 +60,7 @@ function fingerprintHex(fp: bigint): Hex {
 /**
  * The manifest ALWAYS carries the fingerprint as a soft binding, even when a
  * watermark is present. That is what makes the anti-spoof cross-check possible
- * (SPEC.md §2): at lookup, the fingerprint stored here is compared against one
+ *: at lookup, the fingerprint stored here is compared against one
  * computed from the watermark-bearing asset, and a mismatch means the mark was
  * transferred onto a different image.
  */

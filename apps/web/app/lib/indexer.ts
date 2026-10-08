@@ -1,7 +1,7 @@
 /**
  * The Envio indexer, as the app's primary read path.
  *
- * The chain stays the source of truth (SPEC.md §7): every function here has a
+ * The chain stays the source of truth: every function here has a
  * chain fallback or degrades honestly, so the product keeps working with the
  * indexer down. But some things are only practical through the indexer --
  * listing a creator's records, or what was registered most recently, would mean

@@ -1,7 +1,7 @@
 import { DCT_BASIS, DCT_K, DCT_N } from './dct-basis.ts';
 
 /**
- * 64-bit DCT-based perceptual hash (SPEC.md 5.1).
+ * 64-bit DCT-based perceptual hash.
  *
  * DETERMINISM IS THE POINT. A fingerprint computed in the browser and one
  * computed in Node must be bit-identical, because the browser registers and
@@ -32,7 +32,7 @@ export const FINGERPRINT_BITS = 64;
  * Hamming distance at or below this is a match.
  *
  * Cannot exceed 7: the 8x8 LSH band geometry only guarantees recall to
- * distance 7 (SPEC.md 6.3), so a higher threshold would claim matches the
+ * distance 7, so a higher threshold would claim matches the
  * index cannot reliably find.
  */
 export const MATCH_THRESHOLD = 7;
@@ -63,7 +63,7 @@ export const MATCH_THRESHOLD = 7;
 export const TAMPER_THRESHOLD = 16;
 
 /**
- * BT.601 luma, rounded half-up, per SPEC.md 5.1 step 2.
+ * BT.601 luma, rounded half-up.
  * Greyscale happens before the resize so the box filter averages luma rather
  * than three channels independently.
  */
@@ -77,7 +77,7 @@ function toLuma(img: RGBAImage): Float64Array {
 }
 
 /**
- * Area-weighted box filter down to DCT_N x DCT_N (SPEC.md 5.1 step 3).
+ * Area-weighted box filter down to DCT_N x DCT_N.
  *
  * Implemented here rather than delegated to canvas/sharp on purpose: resampler
  * differences are the number one cause of cross-platform hash drift, and box is
@@ -193,7 +193,7 @@ export function hammingDistance(a: bigint, b: bigint): number {
 }
 
 /**
- * Split into the 8 LSH bands the index is keyed by (SPEC.md 6.3).
+ * Split into the 8 LSH bands the index is keyed by.
  * Band 0 is the most significant byte.
  */
 export function toBands(fp: bigint): number[] {

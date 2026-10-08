@@ -5,7 +5,7 @@
  * Math.cos is implementation-approximated in ECMAScript -- engines are not
  * required to agree bit-for-bit. V8 (Node, Chrome) and JavaScriptCore (Safari)
  * use different libm implementations, and Safari is the recommended demo
- * browser (SPEC.md 9.2). Computing the basis at runtime would silently produce
+ * browser. Computing the basis at runtime would silently produce
  * different fingerprints per engine.
  *
  * Emitting the table as literals means the hash path uses only +, -, * and /,

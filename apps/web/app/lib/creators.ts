@@ -8,7 +8,7 @@ import { CONTRACTS, creatorAbi, monadTestnet } from './chain';
  *
  * Kept in their own registry, separate from content records, because C2PA
  * deliberately does not address human identity -- it covers the provenance of
- * the content, for privacy reasons (SPEC.md §6.4). A record says which key
+ * the content, for privacy reasons. A record says which key
  * registered it; this says what that key's owner chose to be called.
  */
 

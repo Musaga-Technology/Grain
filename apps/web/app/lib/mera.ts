@@ -12,14 +12,14 @@ import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
 import { bytesToHex, type Hex } from 'viem';
 
 /**
- * Passkey identity (SPEC.md §9).
+ * Passkey identity.
  *
  * One passkey, three key namespaces, distinguished by PRF salt. The passkey
  * never leaves the authenticator and nothing derived from it is persisted --
  * only the credential id and transports go to localStorage, and that metadata
  * holds no key material.
  *
- * THREE NAMESPACES (SPEC.md §9.3):
+ * THREE NAMESPACES:
  *   grain.identity.v1  the creator signing key, HD index 0. Signs every manifest.
  *   grain.channel.v1   per-channel publishing keys at HD index n. Registrations
  *                      are unlinkable across channels yet all recoverable from
@@ -93,7 +93,7 @@ async function prfOutputFor(ns: Namespace, displayName?: string): Promise<Uint8A
 
   try {
     // The app knows whether this is a first visit; it never asks the person to
-    // choose between "create account" and "sign in" (UX_SPEC /register).
+    // choose between "create account" and "sign in".
     if (existing) {
       const { prfOutput } = await getPasskeyPrfOutput({
         rpId: location.hostname,

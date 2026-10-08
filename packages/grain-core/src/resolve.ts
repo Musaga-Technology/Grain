@@ -2,7 +2,7 @@ import { hammingDistance, MATCH_THRESHOLD, TAMPER_THRESHOLD } from './fingerprin
 import type { GrainManifest } from './manifest.ts';
 
 /**
- * The resolution state machine (SPEC.md §7 and §8.3).
+ * The resolution state machine.
  *
  * Pure logic, deliberately separated from the HTTP layer so it can be tested
  * exhaustively without a chain, an indexer or a network. The four states each
@@ -41,7 +41,7 @@ export interface ResolveInput {
  * Rank by distance, then by registration order.
  *
  * Ties break toward the earliest registration because the registry deliberately
- * does not deduplicate by fingerprint (SPEC.md §6.2): two creators may register
+ * does not deduplicate by fingerprint: two creators may register
  * visually similar images, and the chain's own ordering is the only neutral
  * arbiter available. The UI shows the earliest.
  */
@@ -58,7 +58,7 @@ export function resolve({ queryFingerprint, watermarkRecord, candidates }: Resol
   const best = ranked[0];
 
   if (watermarkRecord && !watermarkRecord.revoked) {
-    // THE ANTI-SPOOF CROSS-CHECK (SPEC.md §2). A watermark payload is not
+    // THE ANTI-SPOOF CROSS-CHECK. A watermark payload is not
     // authenticated -- anyone can embed any recordId into any image. What makes
     // the claim checkable is the fingerprint stored in the manifest: if the
     // mark says one thing and the picture says another, the mark was

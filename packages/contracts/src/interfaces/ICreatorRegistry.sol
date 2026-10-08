@@ -6,8 +6,7 @@ pragma solidity ^0.8.26;
 /// @dev    DELIBERATELY SEPARATE FROM CONTENT RECORDS. The C2PA specification
 ///         does not address human or organisational identity - it focuses on the
 ///         provenance of the content itself, for privacy reasons. Grain mirrors
-///         that separation. Keep this comment; it is a competence signal to any
-///         judge who knows the spec.
+///         that separation.
 interface ICreatorRegistry {
     struct Creator {
         string  handle;          // unique, lowercase [a-z0-9-], 3-30 chars

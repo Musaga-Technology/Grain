@@ -6,7 +6,7 @@ import { Header, Footer } from '../components/Chrome';
 import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 
 /**
- * Demo-machine check (SPEC.md §9.2).
+ * Demo-machine check.
  *
  * Milestone 0 asks for PRF to be verified on the actual demo browser and
  * device, and for PRF_UNAVAILABLE to be reproduced deliberately so the error

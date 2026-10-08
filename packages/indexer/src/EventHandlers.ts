@@ -3,9 +3,8 @@ import { indexer } from 'envio';
 /**
  * Grain indexer handlers.
  *
- * The chain is the source of truth; this is a read accelerator. SPEC.md §7
- * requires the resolver to keep answering with the indexer down, so nothing
- * here may become load-bearing for correctness -- only for speed.
+ * The chain is the source of truth. Every read the app makes from here has a
+ * chain fallback, so nothing here may become load-bearing for correctness.
  */
 
 const BANDS = 8;
@@ -140,6 +139,23 @@ indexer.onEvent(
       creator: event.params.creator.toLowerCase(),
       amountWei: event.params.amountWei,
       grantedAt: Number(event.params.grantedAt),
+      txHash: event.transaction.hash,
+    });
+  },
+);
+
+indexer.onEvent(
+  { contract: 'ActivityAnchor', event: 'Sealed' },
+  async ({ event, context }) => {
+    context.Seal.set({
+      id: event.params.index.toString(),
+      index: Number(event.params.index),
+      from: event.params.from,
+      until: event.params.until,
+      events: Number(event.params.events),
+      root: event.params.root,
+      sealedAt: Number(event.block.timestamp),
+      blockNumber: Number(event.block.number),
       txHash: event.transaction.hash,
     });
   },

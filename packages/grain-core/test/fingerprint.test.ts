@@ -117,7 +117,7 @@ test('toBands splits into 8 bytes, most significant first', () => {
 });
 
 test('PIGEONHOLE: <=7 flipped bits always leaves one band intact', () => {
-  // This is the correctness proof for the 8x8 band geometry (SPEC.md 6.3) and
+  // This is the correctness proof for the 8x8 band geometry and
   // the reason MATCH_THRESHOLD cannot exceed 7.
   const r = rng(7);
   for (let trial = 0; trial < 2000; trial++) {

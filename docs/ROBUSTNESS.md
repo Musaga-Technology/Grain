@@ -126,17 +126,21 @@ if watermark decoding ever had to move into the browser. It would be a
 pipeline-wide change: images encoded with one variant cannot be decoded with
 another, and Q was chosen for robustness.
 
-### Implementation split — correction to SPEC.md §5.2
+### Implementation split
 
-SPEC §5.2 declares `embed()` and `decode()` as though both run in the browser,
-and §8.4 step 5 says the watermark is embedded in-browser. **That is not
-possible.** The official TrustMark JavaScript build is **decode-only**
+The original design had the watermark both embedded and decoded in the browser.
+**With Adobe's shipped libraries that is not possible.** The official TrustMark JavaScript build is **decode-only**
 (adobe/trustmark README, `/js`). Encoding requires the Rust crate.
 
 - **decode** → JS/ONNX, in the browser. This is the verify path, and decode is
   exactly what that build supports.
 - **encode** → Rust crate, server-side. Registration therefore cannot be purely
   client-side.
+
+> **Update, October:** registration is now fully client-side after all. The web
+> app carries its own browser port of the TrustMark encoder
+> (`apps/web/app/lib/trustmark`), checked bit for bit against Adobe's Python
+> reference and readable by the Rust CLI, so the image never leaves the device.
 
 Watermark **removal** is not implemented in Rust either. Act 3 of the demo
 re-embeds a recordId into a different image rather than lifting a mark off a
@@ -193,8 +197,8 @@ they fail in different directions, which is exactly the argument in SPEC §2.
 and the fingerprint lands at median 24 — inside the range where unrelated
 images sit (minimum 18 across 210 pairs). This is not a threshold that can be
 tuned around; at that distance the image genuinely is a different image as far
-as a 64-bit global DCT hash is concerned. `docs/DEMO.md` had a crop-25% beat
-and it has been corrected.
+as a 64-bit global DCT hash is concerned. So a 25% crop is reported as a known
+limit rather than demonstrated as a success.
 
 **TrustMark is more robust to scaling than the literature suggested.** 100%
 recovery at both 50% and 25% downscale, against the ~82% an independent
@@ -249,5 +253,5 @@ lean on the fingerprint path.
 ## Decision gate
 
 **If watermark recovery on screenshots is under ~50%: that is fine.** The fingerprint
-path is co-equal by design (SPEC.md 2), so this changes the demo narration, not the
-architecture. Update `docs/DEMO.md` and carry on. Do not redesign.
+path is co-equal by design, so this changes how the result is described, not the
+architecture.

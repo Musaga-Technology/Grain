@@ -60,3 +60,20 @@ type License {
   grantedAt: Int!
   txHash: String!
 }
+
+"""
+One seal of Grain's activity log (ActivityAnchor). The root is copied here for
+listing only: /sealed compares the log against the root it reads from the
+contract itself, so a wrong index can't make a tampered log look sealed.
+"""
+type Seal {
+  id: ID! # the seal's index in the contract
+  index: Int! @index
+  from: BigInt!
+  until: BigInt!
+  events: Int!
+  root: String!
+  sealedAt: Int!
+  blockNumber: Int!
+  txHash: String!
+}

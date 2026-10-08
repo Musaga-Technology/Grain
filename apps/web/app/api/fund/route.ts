@@ -56,7 +56,7 @@ function amounts(gasPrice: bigint): { grant: bigint; floor: bigint } {
  * The in-memory counters reset whenever the serverless instance recycles, so
  * they are a speed bump rather than a guarantee. A real deployment needs
  * durable rate limiting, and mainnet needs a different funding model entirely
- * -- say so in the README rather than let a judge find it.
+ * -- the README says so.
  */
 const MAX_GRANTS_PER_HOUR = 30;
 const grantsThisHour: number[] = [];

@@ -217,7 +217,6 @@ Registering needs a passkey that supports the WebAuthn PRF extension — Safari 
 
 | | |
 |---|---|
-| [SPEC.md](SPEC.md) | the design, and the decisions that are closed |
 | [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md) | the robustness matrix and thresholds |
 | [docs/GAS.md](docs/GAS.md) | gas, and the LSH scaling ceiling |
 | [docs/INDEXER.md](docs/INDEXER.md) | the Envio indexer |

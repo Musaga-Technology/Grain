@@ -1,20 +1,14 @@
 /**
- * TrustMark watermark parameters (SPEC.md 5.2).
+ * TrustMark watermark parameters.
  *
- * IMPLEMENTATION SPLIT -- this is a correction to SPEC.md 5.2, which declares
- * embed() and decode() as if both run in the browser. They cannot:
+ * Adobe's official JavaScript build of TrustMark is decode-only, so the web app
+ * carries its own browser port of the encoder (apps/web/app/lib/trustmark),
+ * checked bit for bit against Adobe's Python reference and readable by the
+ * Rust CLI.
  *
- *   decode  -> TrustMark's JS/ONNX build. This is the verify path, and decoding
- *              is the only operation that build supports.
- *   encode  -> TrustMark's Rust crate. The official JavaScript implementation
- *              is DECODE-ONLY (see adobe/trustmark README, /js), so embedding
- *              cannot happen client-side with the shipped library.
- *
- * Watermark removal is not implemented in Rust either, which is why the Act 3
- * demo re-embeds a recordId into a different image rather than lifting a mark
- * off a registered one. That is the more honest attack in any case: TrustMark
- * payloads are not authenticated, so anyone can forge one -- which is precisely
- * what the fingerprint cross-check exists to catch.
+ * TrustMark payloads are not authenticated: anyone can stamp any record id onto
+ * any image. That is why the forgery demo re-embeds a record id into a different
+ * picture, and precisely what the fingerprint cross-check exists to catch.
  */
 
 /**
@@ -42,7 +36,7 @@ export const TRUSTMARK_VERSIONS = {
  */
 export const TRUSTMARK_VERSION = 'BCH_5';
 
-/** Variant Q per SPEC.md 5.2 -- PSNR 43-45 dB, the robustness/invisibility balance. */
+/** Variant Q -- PSNR 43-45 dB, the robustness/invisibility balance. */
 export const TRUSTMARK_VARIANT = 'Q';
 
 /** C2PA approved soft binding algorithm list identifier for com.adobe.trustmark.Q. */

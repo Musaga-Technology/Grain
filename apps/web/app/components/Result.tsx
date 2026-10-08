@@ -3,12 +3,12 @@
 import type { Resolution } from '../lib/types';
 
 /**
- * The four states, each visually distinct (UX_SPEC "The four states").
+ * The four states, each visually distinct.
  * A person should know which one they are looking at from across a room, with
  * the text unreadable.
  *
- * NO CONFIDENCE PERCENTAGE ANYWHERE. "87% match" invites an argument you cannot
- * win in front of judges. Matched, or not.
+ * NO CONFIDENCE PERCENTAGE ANYWHERE. "87% match" invites an argument about what
+ * 87% means that nobody can settle. Matched, or not.
  */
 
 function relativeTime(unixSeconds: number): string {
@@ -23,7 +23,7 @@ function relativeTime(unixSeconds: number): string {
   return ago(Math.floor(seconds / day / 365), 'year');
 }
 
-/** Name the human, not the address (UX_SPEC "Copy principles"). */
+/** Name the human, not the address. */
 function creatorName(handle: string | undefined): string {
   return handle ? `@${handle}` : 'an unnamed creator';
 }

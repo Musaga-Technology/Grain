@@ -3,11 +3,9 @@ pragma solidity ^0.8.26;
 
 /// @title ILicenseRegistry
 /// @notice Pay-per-use licensing, consumed by the MetaMask Agent Wallet plugin.
-/// @dev    NO PROTOCOL FEE. A fee invites tokenomics questions that lead nowhere
-///         good in judging. Full amount forwards to the creator.
-/// @dev    NO ERC-721 ANYWHERE. A licence is a registry record, not a token.
-///         See SPEC.md 1 - the NFT question will be asked and the answer must be
-///         structural, not rhetorical.
+/// @dev    NO PROTOCOL FEE. The full amount forwards to the creator.
+/// @dev    NO ERC-721 ANYWHERE. A licence is a registry record, not a token:
+///         Grain finds records by content, and there is nothing to trade.
 interface ILicenseRegistry {
     event LicenseGranted(
         uint64  indexed recordId,

@@ -26,7 +26,7 @@ test('MAX_RECORD_ID is the 40-bit ceiling Grain writes', () => {
 });
 
 test('recordIds outside the watermarkable range are refused', () => {
-  // recordId 0 is the null id (SPEC.md 6.2), so it is never watermarkable.
+  // recordId 0 is the null id, so it is never watermarkable.
   assert.equal(isWatermarkable(0n), false);
   assert.equal(isWatermarkable(1n), true);
   assert.equal(isWatermarkable(MAX_RECORD_ID), true);

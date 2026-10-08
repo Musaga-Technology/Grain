@@ -102,8 +102,7 @@ largest one, at roughly 22,000 ids and 11.5M gas to read in a single call.
 Against a 150M block gas limit that still fits, but it is within one order of
 magnitude of the wall, and it is a single read.
 
-This is the limit to state plainly in the README rather than wait for a judge
-to find: **the onchain LSH index is correct at hackathon scale and has a
+This is the limit, stated plainly: **the onchain LSH index is correct at hackathon scale and has a
 measurable ceiling.** The production path is the one SPEC §7 already takes —
 multi-index hashing with wider bands offchain, fanned out by the indexer, with
 `FingerprintIndex.verify()` proving the winner on chain for 8,687 gas. The
