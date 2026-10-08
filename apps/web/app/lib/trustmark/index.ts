@@ -117,7 +117,11 @@ let wasmConfigured = false;
 function configureWasm() {
   if (wasmConfigured) return;
   wasmConfigured = true;
-  if (typeof window !== 'undefined') {
+  // Test for Node rather than for a window: some Node hosts (the MetaMask
+  // agent CLI among them) define a global `window`, and taking that for a
+  // browser sends the runtime looking for its WASM at the site's /ort/ path.
+  const inNode = typeof process !== 'undefined' && Boolean(process.versions?.node);
+  if (!inNode && typeof window !== 'undefined') {
     // Same-origin, like the models: a third-party CDN reset this download
     // mid-transfer in testing, and the runtime is useless half-loaded.
     ort.env.wasm.wasmPaths = '/ort/';

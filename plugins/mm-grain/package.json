@@ -1,0 +1,85 @@
+{
+  "name": "mm-plugin-grain",
+  "version": "0.1.0",
+  "description": "Grain for the MetaMask Agent Wallet: find out who made an image, then pay them",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Musaga-Technology/Grain",
+    "directory": "plugins/mm-grain"
+  },
+  "homepage": "https://grain-on-monad.vercel.app",
+  "keywords": [
+    "oclif-plugin",
+    "metamask",
+    "c2pa",
+    "provenance",
+    "monad"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "files": [
+    "dist",
+    "oclif.manifest.json"
+  ],
+  "scripts": {
+    "build": "node build.mjs && oclif manifest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepack": "npm run build"
+  },
+  "oclif": {
+    "bin": "mm",
+    "commands": "./dist/commands",
+    "topicSeparator": " ",
+    "topics": {
+      "grain": {
+        "description": "Check who made an image, from the image itself, and pay them"
+      }
+    }
+  },
+  "mm": {
+    "schemaVersion": 1,
+    "minCliVersion": ">=6.2.0",
+    "capabilities": [],
+    "commands": [
+      {
+        "id": "grain:verify",
+        "capabilities": [],
+        "dataAccess": []
+      },
+      {
+        "id": "grain:record",
+        "capabilities": [],
+        "dataAccess": []
+      },
+      {
+        "id": "grain:creator",
+        "capabilities": [],
+        "dataAccess": []
+      },
+      {
+        "id": "grain:pay",
+        "capabilities": [
+          "wallet-read",
+          "wallet-submit"
+        ],
+        "dataAccess": []
+      }
+    ]
+  },
+  "dependencies": {
+    "onnxruntime-web": "1.20.1",
+    "viem": "^2.56.8"
+  },
+  "peerDependencies": {
+    "@metamask/agent-wallet": ">=6.2.0"
+  },
+  "devDependencies": {
+    "@metamask/agent-wallet": "^7.0.0",
+    "esbuild": "^0.25.0",
+    "oclif": "^4",
+    "typescript": "^5"
+  }
+}

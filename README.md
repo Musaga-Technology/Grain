@@ -113,6 +113,23 @@ Envio Cloud deploys the indexer from this repository's `envio` branch (root dire
 
 ---
 
+## For agents: the MetaMask Agent Wallet plugin
+
+Agents now choose images to post, buy and build on, and they can't tell where an image came from. [`mm-plugin-grain`](plugins/mm-grain) adds Grain to MetaMask's agent CLI:
+
+```
+mm grain verify <image>          who made this image? (JSON verdict, forged credentials flagged)
+mm grain pay <image|record> <n>  pay that person, through the agent's MetaMask wallet
+mm grain record <id>             look up a record
+mm grain creator <handle>        everything a creator has registered (via Envio)
+```
+
+- **Same answer as the website.** The plugin bundles Grain's own resolver and the site's TrustMark port, so the CLI and the site cannot disagree about an image. Each verdict carries the distance `FingerprintIndex.verify()` returned on chain.
+- **Find the human, then pay them.** A creator's Grain account is an ordinary EOA, so the same address receives on any EVM chain. The registry lives on Monad testnet; `pay` sends on Monad mainnet by default, through MetaMask's policy-gated executor.
+- **Strict about money.** `pay` acts only on a clean match or an explicit record number. A forged watermark, an uncertain match or a withdrawn record is refused with the reason.
+
+---
+
 ## Measured, not asserted
 
 ### Robustness — 21 real images × 11 transformations
@@ -189,6 +206,7 @@ Registering needs a passkey that supports the WebAuthn PRF extension — Safari 
 | [packages/grain-core](packages/grain-core) | fingerprint, manifest, resolution — isomorphic TypeScript |
 | [packages/contracts](packages/contracts) | the four contracts |
 | [apps/web](apps/web) | the app, including the browser TrustMark port |
+| [plugins/mm-grain](plugins/mm-grain) | the MetaMask Agent Wallet plugin |
 
 ---
 
