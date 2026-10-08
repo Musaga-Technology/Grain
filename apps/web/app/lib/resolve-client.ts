@@ -2,7 +2,7 @@
 
 import { createPublicClient, http, parseAbi, type PublicClient } from 'viem';
 import {
-  decodeImage, fingerprint, resolve, toBands,
+  decodeImage, fingerprint, hammingDistance, resolve, toBands, TAMPER_THRESHOLD,
   type Resolution, type ResolvedRecord,
 } from '@grain/core';
 import { CONTRACTS, monadTestnet } from './chain';
@@ -88,7 +88,12 @@ function fromIndexed(r: IndexedRecord): ResolvedRecord {
 async function candidates(fp: bigint): Promise<ResolvedRecord[]> {
   const keys = toBands(fp).map((value, band) => `${band}:${value}`);
   const indexed = await candidatesByBands(keys);
-  if (indexed) return indexed.map(fromIndexed);
+  // An index lags the chain by a few seconds. If it has nothing close, ask the
+  // chain before saying so: otherwise an image registered moments ago, with its
+  // watermark stripped, would read as never registered. This only costs time
+  // on the not-found path; a match returns straight from the index.
+  const records = indexed?.map(fromIndexed);
+  if (records?.some((r) => hammingDistance(r.fingerprint, fp) <= TAMPER_THRESHOLD)) return records;
   return candidatesFromChain(fp);
 }
 

@@ -25,10 +25,36 @@ const RESOLVER = process.env.NEXT_PUBLIC_RESOLVER_URL;
  */
 const ACCEPTED = ['image/png', 'image/jpeg'];
 
+/**
+ * Ready-made copies for a visitor with no image to hand. All four come from
+ * one procedurally generated artwork registered as @grain-samples (record 510),
+ * so the attribution they resolve to is true. scripts/make-sample-art.ts makes
+ * the art; each copy is a real, measured outcome rather than a scripted one.
+ */
+const SAMPLES = [
+  {
+    id: 'reposted', label: 'A reposted copy', file: '/samples/reposted.jpg',
+    explain: 'Re-encoded as a JPEG, the way any repost is. The file’s credentials are gone, but the watermark and the picture both lead back to the record.',
+  },
+  {
+    id: 'squashed', label: 'Filtered and crushed', file: '/samples/squashed.jpg',
+    explain: 'Filtered, halved and compressed to 9 KB. That destroyed the watermark, so Grain found the record from the picture itself.',
+  },
+  {
+    id: 'forged', label: 'A forged credential', file: '/samples/forged.jpg',
+    explain: 'Someone stamped @grain-samples’ watermark onto a different picture. The mark points to the record, but the picture doesn’t match it — so Grain refuses to attribute it.',
+  },
+  {
+    id: 'unregistered', label: 'Never registered', file: '/samples/unregistered.jpg',
+    explain: 'Nobody has registered this picture, and Grain says so rather than guessing.',
+  },
+] as const;
+type Sample = (typeof SAMPLES)[number];
+
 type Phase =
   | { kind: 'idle' }
   | { kind: 'working'; step: number; slow: boolean; preview: string }
-  | { kind: 'done'; result: Resolution; extras: ResolveExtras; preview: string; watermarkPending?: boolean }
+  | { kind: 'done'; result: Resolution; extras: ResolveExtras; preview: string; watermarkPending?: boolean; sample?: Sample }
   | { kind: 'error'; message: string };
 
 export default function Verify() {
@@ -46,7 +72,7 @@ export default function Verify() {
   const fileInput = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
 
-  const handle = useCallback(async (file: File) => {
+  const handle = useCallback(async (file: File, sample?: Sample) => {
     if (!ACCEPTED.includes(file.type)) {
       // Plain language, never a MIME type (UX_SPEC "Input").
       setPhase({ kind: 'error', message: "Grain reads PNG and JPEG images. Try saving this one as either." });
@@ -74,6 +100,7 @@ export default function Verify() {
           result: payload,
           extras: { queryFingerprint: payload.queryFingerprint, candidatesExamined: payload.candidatesExamined },
           preview,
+          sample,
         });
       } else {
         // In-browser: nothing is uploaded. May report twice -- see resolveProgressive.
@@ -90,6 +117,7 @@ export default function Verify() {
             },
             preview,
             watermarkPending: u.watermarkPending,
+            sample,
           });
         });
       }
@@ -143,6 +171,23 @@ export default function Verify() {
       document.removeEventListener('drop', onDrop);
     };
   }, [handle]);
+
+  const trySample = useCallback(async (sample: Sample) => {
+    try {
+      const blob = await (await fetch(sample.file)).blob();
+      await handle(new File([blob], sample.file.split('/').pop()!, { type: 'image/jpeg' }), sample);
+    } catch {
+      setPhase({ kind: 'error', message: "That sample didn't load. Try another, or use an image of your own." });
+    }
+  }, [handle]);
+
+  // /verify?sample=forged opens straight onto a sample: for links from the
+  // landing page, and for showing someone the product in one click.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('sample');
+    const sample = SAMPLES.find((x) => x.id === wanted);
+    if (sample) void trySample(sample);
+  }, [trySample]);
 
   const reset = () => { setChainDistance(null); setPhase({ kind: 'idle' }); };
 
@@ -222,6 +267,23 @@ export default function Verify() {
               <p className="mt-5 text-sm" style={{ color: 'var(--ink-faint)' }}>
                 PNG or JPEG. Your image is checked on your own device and never uploaded.
               </p>
+
+              <div className="mt-12 text-left">
+                <p className="text-sm font-medium">No image handy? Try one of these</p>
+                <ul className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {SAMPLES.map((sample) => (
+                    <li key={sample.id}>
+                      <button onClick={() => void trySample(sample)}
+                              className="grain-sample group w-full text-left rounded-lg overflow-hidden border cursor-pointer"
+                              style={{ borderColor: 'var(--rule)', background: 'var(--surface)' }}>
+                        <Image src={sample.file} alt="" width={240} height={160}
+                               className="w-full aspect-[3/2] object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <span className="block px-3 py-2 text-[13px] leading-snug">{sample.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
 
@@ -244,6 +306,12 @@ export default function Verify() {
                 </figure>
                 <div>
                   <Result result={phase.result} onVerifyOnChain={verifyOnChain} chainDistance={chainDistance} />
+                  {phase.sample && !phase.watermarkPending && (
+                    <div className="grain-rise mx-6 -mt-2 mb-6 rounded-lg px-4 py-3 text-[14px] leading-relaxed"
+                         style={{ background: 'var(--brand-soft)' }}>
+                      <span className="font-medium">What just happened: </span>{phase.sample.explain}
+                    </div>
+                  )}
                   {phase.watermarkPending && (
                     // Honest about what is still running: this answer came from
                     // the picture alone, and the watermark check can change it.

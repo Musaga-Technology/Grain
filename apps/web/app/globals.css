@@ -115,3 +115,7 @@ body {
   transition: border-color 160ms ease, transform 160ms ease;
 }
 .grain-card:hover { border-color: var(--brand); }
+
+.grain-sample { transition: border-color 160ms ease, transform 160ms ease; }
+.grain-sample:hover { border-color: var(--brand) !important; transform: translateY(-2px); }
+.grain-sample:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

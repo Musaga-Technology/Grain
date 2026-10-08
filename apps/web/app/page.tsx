@@ -62,7 +62,10 @@ export default function Landing() {
               </Link>
             </div>
             <p className="mt-6 text-sm" style={{ color: 'var(--ink-faint)' }}>
-              Free. No account needed to check an image.
+              Free. No account needed to check an image.{' '}
+              <Link href="/verify?sample=forged" className="underline underline-offset-4">
+                Watch it catch a forgery &rarr;
+              </Link>
             </p>
           </div>
 
