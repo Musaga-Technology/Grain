@@ -85,6 +85,13 @@ mm config set experimentalPlugins true
 mm plugins install mm-plugin-grain
 ```
 
+**On npm 12, `mm plugins install` fails with `PLUGIN_NOT_FOUND`** for every npm package, not just this one: `mm` reads `npm view <package> --json`, which npm 12 now returns as an array where `mm` expects an object. Run the install with npm 11 (only the install needs it):
+
+```bash
+PATH="$(dirname "$(npx -y -p npm@11 which npm)"):$PATH" mm plugins install mm-plugin-grain
+# or simply: npm install -g npm@11
+```
+
 From this repository:
 
 ```bash
