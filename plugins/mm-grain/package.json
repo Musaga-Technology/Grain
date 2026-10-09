@@ -63,6 +63,7 @@
       {
         "id": "grain:pay",
         "capabilities": [
+          "wallet-read",
           "wallet-submit"
         ],
         "dataAccess": []
@@ -70,6 +71,7 @@
       {
         "id": "grain:license",
         "capabilities": [
+          "wallet-read",
           "wallet-submit"
         ],
         "dataAccess": []

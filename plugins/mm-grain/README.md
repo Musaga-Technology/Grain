@@ -50,7 +50,7 @@ The first run downloads the 45 MB watermark decoder once into `~/.cache/grain/mo
 
 ### `mm grain license <image|record>`
 
-Licenses the image through Grain's `LicenseRegistry` on Monad testnet, at the price the creator set when they registered. The contract forwards the full amount to the creator (there is no protocol fee) and records the licence on chain, where Grain's Envio indexer picks it up. Needs `mm login` and `wallet-submit`.
+Licenses the image through Grain's `LicenseRegistry` on Monad testnet, at the price the creator set when they registered. The contract forwards the full amount to the creator (there is no protocol fee) and records the licence on chain, where Grain's Envio indexer picks it up. Needs `mm login`, `wallet-submit` and `wallet-read`.
 
 ```
 $ mm grain license https://grain-on-monad.vercel.app/samples/reposted.jpg --max-price 0.05 --dry-run
@@ -63,7 +63,7 @@ Licensing record 511 costs 0.01 MON, paid in full to @grain-studio. Nothing was 
 
 ### `mm grain pay <image|record> <amount>`
 
-Finds the creator, then sends them the amount through MetaMask's policy-gated wallet executor. Needs `mm login` and the `wallet-submit` capability, which you approve at install.
+Finds the creator, then sends them the amount through MetaMask's policy-gated wallet executor. Needs `mm login`, and the `wallet-submit` and `wallet-read` capabilities, which you approve at install (`wallet-read` lets it add the Monad testnet RPC entry described below).
 
 ```
 $ mm grain pay ./downloaded.jpg 0.5 --dry-run
