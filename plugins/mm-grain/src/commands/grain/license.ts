@@ -1,9 +1,9 @@
 import {
   type CommandIO, InputFieldType, type InputSchema, PluginCommand, schemaToArgs, schemaToFlags,
 } from '@metamask/agent-wallet/plugin';
-import { planLicence, type LicencePlan } from '../../lib/payment.ts';
+import { MONAD_TESTNET, planLicence, type LicencePlan } from '../../lib/payment.ts';
 import { who } from '../../lib/format.ts';
-import { executorRequest } from '../../lib/submit.ts';
+import { ensureMonadTestnetRpc, executorRequest } from '../../lib/submit.ts';
 
 /**
  * License an image through Grain's LicenseRegistry on Monad testnet.
@@ -49,6 +49,9 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
     const plan = await planLicence(String(target), maxPrice ? String(maxPrice) : undefined, (l) => io.progress(l));
     if (dryRun) return { ...plan, sent: false };
 
+    if (plan.chainId === MONAD_TESTNET && ensureMonadTestnetRpc(this.ctx.walletStateManager as never)) {
+      io.progress('Pointed MetaMask at Monad testnet\'s own RPC (its default proxy rejects chain 10143)');
+    }
     const executor = await this.ctx.walletExecutor(io, 'grain:license');
     const result = (await executor(
       (await executorRequest(plan.chainId, plan.transaction)) as never,

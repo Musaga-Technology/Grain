@@ -96,6 +96,15 @@ mm plugins install "file:$PWD" --accept-permissions
 
 Skip `link-host` and the plugin loads a second copy of the CLI, which crashes with `window.addEventListener is not a function`. Installs from npm don't need it; mm links its own copy for those.
 
+## Monad testnet and MetaMask's wallet
+
+`mm` lists Monad Testnet (10143) as a supported chain, but two MetaMask services it relies on reject it with `Invalid chainId` (HTTP 400): the gas-fee estimate API, and the Infura proxy it uses as the chain's RPC. So out of the box, no transaction can be sent on 10143. Grain works around both using `mm`'s own mechanisms:
+
+- **Fees:** on testnet the plugin sets `gas`, `maxFeePerGas` and `maxPriorityFeePerGas` itself, read from Monad's RPC (gas estimate plus 25%; Monad charges the whole limit). `mm` skips its fee API when these are present.
+- **RPC:** before the first real submission on testnet, the plugin adds one entry to the wallet's `customEvmChains`, Monad Testnet with `rpcTarget: https://testnet-rpc.monad.xyz`. `mm` checks custom chains before its default proxy. It's added once and only if missing, and the command says when it does it. A dry run never changes anything.
+
+First licence through this path: [`0xc9e76b7b…6b17`](https://testnet.monadexplorer.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17), approved by email through MetaMask's server wallet.
+
 ## How it works
 
 The plugin bundles Grain's own resolver (`packages/grain-core`) and the website's browser TrustMark port, run on ONNX Runtime's WASM backend in Node. The verdict logic is the same code the website runs, so the CLI and the site cannot disagree about an image. Candidate lookups go to the Envio indexer and fall back to Monad's RPC.

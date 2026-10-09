@@ -3,7 +3,7 @@ import {
 } from '@metamask/agent-wallet/plugin';
 import { MONAD_TESTNET, planPayment, type PaymentPlan } from '../../lib/payment.ts';
 import { who } from '../../lib/format.ts';
-import { executorRequest } from '../../lib/submit.ts';
+import { ensureMonadTestnetRpc, executorRequest } from '../../lib/submit.ts';
 
 /**
  * Pay the person who made an image.
@@ -55,6 +55,9 @@ export default class GrainPay extends PluginCommand<PayResult> {
     const plan = await planPayment(String(target), String(amount), chainId ? Number(chainId) : MONAD_TESTNET, (l) => io.progress(l));
     if (dryRun) return { ...plan, sent: false };
 
+    if (plan.chainId === MONAD_TESTNET && ensureMonadTestnetRpc(this.ctx.walletStateManager as never)) {
+      io.progress('Pointed MetaMask at Monad testnet\'s own RPC (its default proxy rejects chain 10143)');
+    }
     const executor = await this.ctx.walletExecutor(io, 'grain:pay');
     const result = (await executor(
       (await executorRequest(plan.chainId, plan.transaction)) as never,

@@ -52,3 +52,41 @@ export async function executorRequest(chainId: number, tx: { to: `0x${string}`; 
 
   return { kind: 'transaction', chainId, transaction };
 }
+
+/**
+ * Point MetaMask's wallet at Monad's own RPC for chain 10143.
+ *
+ * mm lists Monad Testnet as supported, but without an RPC of its own it routes
+ * the chain through MetaMask's Infura proxy, which answers "Invalid chainId"
+ * (HTTP 400): the block tracker never starts and nothing can be sent. mm reads
+ * the wallet's customEvmChains first and uses an entry's rpcTarget when it has
+ * one, so one entry fixes it -- the same entry a user could add by hand. It is
+ * added only if missing, only before a real submission on testnet, and the
+ * person is told. Returns true when it changed something.
+ */
+export const MONAD_TESTNET_RPC = {
+  key: 'monad-testnet',
+  chainId: REGISTRY_CHAIN_ID,
+  caip2: `eip155:${REGISTRY_CHAIN_ID}`,
+  name: 'Monad Testnet',
+  nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+  blockExplorer: 'https://testnet.monadexplorer.com',
+  rpcTarget: 'https://testnet-rpc.monad.xyz',
+};
+
+interface StateManager {
+  read(): { customEvmChains?: { chainId: number; rpcTarget?: string }[] };
+  updateWith(fn: (s: { customEvmChains?: unknown[] }) => Record<string, unknown>): unknown;
+}
+
+export function ensureMonadTestnetRpc(state: StateManager): boolean {
+  const has = (state.read().customEvmChains ?? []).some((c) => c.chainId === REGISTRY_CHAIN_ID && c.rpcTarget);
+  if (has) return false;
+  state.updateWith((s) => ({
+    customEvmChains: [
+      ...((s.customEvmChains ?? []) as { chainId: number }[]).filter((c) => c.chainId !== REGISTRY_CHAIN_ID),
+      MONAD_TESTNET_RPC,
+    ],
+  }));
+  return true;
+}
