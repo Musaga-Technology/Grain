@@ -76,6 +76,8 @@ export interface RecordView {
   signatureValid?: boolean;
   /** Recorded, but not in Grain's manifest format. */
   manifestUnreadable?: boolean;
+  /** How the image was made, as declared and signed (C2PA digitalSourceType). */
+  created?: { digitalSourceType?: string; softwareAgent?: string };
   /** Where the manifest was found: the indexer, or a log search on chain. */
   source?: 'indexer' | 'chain';
   manifest?: Record<string, unknown>;
@@ -141,6 +143,7 @@ async function load(recordId: string): Promise<RecordView | null> {
       const bindings: Array<{ alg: string }> = m.assertions?.softBindings ?? [];
       view.title = m.assertions?.title;
       view.generator = m.assertions?.generator;
+      view.created = m.assertions?.created;
       view.watermarked = bindings.some((b) => b.alg === 'com.adobe.trustmark.Q');
       view.signatureValid = (await verifyManifest(m as GrainManifest))
         && String(m.creator).toLowerCase() === r.creator.toLowerCase();

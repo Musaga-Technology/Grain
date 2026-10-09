@@ -100,6 +100,8 @@ export function Result({ result, onVerifyOnChain, chainDistance }: {
         ) : <span className="whitespace-nowrap">{name}</span>}
       </h2>
 
+      <MadeWith manifest={record?.manifest} />
+
       {record && (
         <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
           registered {relativeTime(record.registeredAt)}
@@ -154,5 +156,28 @@ function VerifyOnChain({ onVerify, distance, prominent = false }: {
     >
       verify on chain &#8599;
     </button>
+  );
+}
+
+/**
+ * How the image was made, as the creator declared and signed it (C2PA's
+ * digitalSourceType). Generated media is labelled plainly, so an AI image can
+ * never pass as a photograph.
+ */
+export function MadeWith({ manifest }: { manifest?: { assertions?: { created?: { digitalSourceType?: string; softwareAgent?: string } } } }) {
+  const created = manifest?.assertions?.created;
+  if (!created?.digitalSourceType) return null;
+  const kind = created.digitalSourceType.split('/').pop();
+  const label = kind === 'trainedAlgorithmicMedia'
+    ? `AI-generated${created.softwareAgent ? ` with ${created.softwareAgent}` : ''}`
+    : kind === 'digitalCapture' ? 'Photograph' : kind === 'digitalCreation' ? 'Artwork made by a person' : null;
+  if (!label) return null;
+  const ai = kind === 'trainedAlgorithmicMedia';
+  return (
+    <p className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm"
+       style={{ background: ai ? '#f1ecfb' : 'var(--brand-soft)', color: ai ? '#5b3fa0' : 'var(--brand)' }}>
+      {ai ? '✦' : '●'} {label}
+      <span style={{ color: 'var(--ink-faint)' }}>&middot; declared and signed by the creator</span>
+    </p>
   );
 }

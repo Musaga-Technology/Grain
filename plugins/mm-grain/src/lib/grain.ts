@@ -8,7 +8,7 @@
  */
 import { createPublicClient, defineChain, http, parseAbi, type PublicClient } from 'viem';
 import {
-  decodeImage, fingerprint, hammingDistance, resolve, toBands, TAMPER_THRESHOLD,
+  decodeCbor, decodeImage, fingerprint, hammingDistance, resolve, toBands, TAMPER_THRESHOLD,
   type Resolution, type ResolvedRecord,
 } from '../../../../packages/grain-core/src/index.ts';
 import deployments from '../../../../deployments/monad-testnet.json' with { type: 'json' };
@@ -138,6 +138,8 @@ export interface Verification {
   candidatesFrom: 'indexer' | 'chain';
   /** The distance FingerprintIndex.verify() returned, when there is a record to check. */
   onChainDistance?: number;
+  /** How the record's image was made, as declared by its creator. */
+  madeWith?: string | null;
 }
 
 export async function verifyImage(
@@ -155,8 +157,9 @@ export async function verifyImage(
     : resolution.state === 'UNCERTAIN' ? resolution.candidates[0] : undefined;
   if (subject) subject.creatorHandle ??= await handleOf(subject.creator);
 
+  const made = subject ? await madeWith(subject.recordId) : null;
   return {
-    resolution, fingerprint: fp,
+    resolution, fingerprint: fp, madeWith: made,
     watermark: decodeWatermark ? (watermarkRecord ? 'found' : 'none') : 'skipped',
     candidatesFrom: cands.source,
     onChainDistance: subject ? await verifyOnChain(subject.recordId, fp).catch(() => undefined) : undefined,
@@ -194,6 +197,30 @@ export async function licencesFor(recordId: bigint): Promise<{ licensee: string;
     `query($id:numeric!){ License(where:{recordId:{_eq:$id}}, order_by:{grantedAt:desc}){ licensee amountWei grantedAt txHash } }`,
     { id: recordId.toString() });
   return data?.License ?? null;
+}
+
+/**
+ * How a record's image was made, as its creator declared and signed it
+ * (C2PA digitalSourceType): "AI-generated with ChatGPT", "photograph", ...
+ * null when the manifest says nothing or the indexer can't be reached.
+ */
+export async function madeWith(recordId: bigint): Promise<string | null> {
+  const data = await gql<{ Record: { manifest: string }[] }>(
+    `query($id:String!){ Record(where:{id:{_eq:$id}}){ manifest } }`, { id: recordId.toString() });
+  const hex = data?.Record[0]?.manifest;
+  if (!hex) return null;
+  try {
+    const m = decodeCbor(new Uint8Array((hex.slice(2).match(/../g) ?? []).map((b) => parseInt(b, 16)))) as
+      { assertions?: { created?: { digitalSourceType?: string; softwareAgent?: string } } };
+    const c = m.assertions?.created;
+    const kind = c?.digitalSourceType?.split('/').pop();
+    if (kind === 'trainedAlgorithmicMedia') return `AI-generated${c?.softwareAgent ? ` with ${c.softwareAgent}` : ''}`;
+    if (kind === 'digitalCapture') return 'photograph';
+    if (kind === 'digitalCreation') return 'artwork made by a person';
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export async function indexedRecord(recordId: bigint): Promise<{ blockNumber: number; txHash: string } | null> {

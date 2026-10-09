@@ -6,7 +6,7 @@ import { createWalletClient, createPublicClient, http, bytesToHex, parseEther, t
 import { zipSync } from 'fflate';
 import {
   decodeImage, fingerprint, buildManifest, signManifestWith, encodeSignedManifest, encodePNG,
-  aspectRatioWarning,
+  aspectRatioWarning, DIGITAL_SOURCE,
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
 import { unlock, deviceKeyring, PasskeyUnavailable, storedCredential, type Keyring, type Session } from '../lib/mera';
@@ -44,7 +44,7 @@ const MAX_BATCH = 10;
 
 interface Item { file: File; preview: string; wideRatio: boolean }
 type ItemStatus = 'waiting' | 'working' | 'done' | 'failed';
-interface Progress { item: Item; status: ItemStatus; recordId?: string }
+interface Progress { item: Item; status: ItemStatus; recordId?: string; confirmMs?: number; gasUsed?: bigint }
 
 type Phase =
   | { kind: 'choosing' }
@@ -68,6 +68,9 @@ export default function Register() {
   useEffect(() => { setPens(knownPenNames()); }, []);
   // Readable only with this passkey; signed into the manifest as ciphertext.
   const [note, setNote] = useState('');
+  // How it was made, declared in C2PA's vocabulary and signed into the manifest.
+  const [made, setMade] = useState<'camera' | 'humanMade' | 'aiGenerated'>('camera');
+  const [aiTool, setAiTool] = useState('');
   // Asked once. A returning creator already has a name on chain, and the app
   // knows which visit this is without asking.
   const [firstVisit, setFirstVisit] = useState(true);
@@ -184,7 +187,9 @@ export default function Register() {
       chain: monadTestnet,
       transport: http(process.env.NEXT_PUBLIC_RPC_URL),
     });
-    const reader = createPublicClient({ chain: monadTestnet, transport: http(process.env.NEXT_PUBLIC_RPC_URL) });
+    // Polls for receipts every 250 ms: the default interval is seconds, which
+    // would make Monad's confirmation time look slower than it is.
+    const reader = createPublicClient({ chain: monadTestnet, transport: http(process.env.NEXT_PUBLIC_RPC_URL), pollingInterval: 250 });
     const marked: Record<string, Uint8Array> = {};
     let handle: string | undefined;
 
@@ -265,6 +270,10 @@ export default function Register() {
               watermarked,
               // Ciphertext only: the note never leaves this browser readable.
               private: sealedNote,
+              created: {
+                digitalSourceType: DIGITAL_SOURCE[made],
+                ...(made === 'aiGenerated' && aiTool.trim() ? { softwareAgent: aiTool.trim().slice(0, 60) } : {}),
+              },
             }),
             session.account,
           );
@@ -280,8 +289,12 @@ export default function Register() {
           // registration took this recordId first, and reporting that as
           // success would hand the person a watermark pointing at someone
           // else's record.
+          const sentAt = performance.now();
           const receipt = await reader.waitForTransactionReceipt({ hash });
           if (receipt.status !== 'success') throw new Error('registration reverted');
+          // Shown on the success screen: Monad's speed, measured, not claimed.
+          p.confirmMs = performance.now() - sentAt;
+          p.gasUsed = receipt.gasUsed;
 
           marked[uniqueName(marked, p.item.file.name.replace(/(\.\w+)?$/, '-grain.png'))] = encodePNG(markedImage);
           p.status = 'done';
@@ -322,7 +335,7 @@ export default function Register() {
     } finally {
       ring.end();
     }
-  }, [title, name, price, persona, penInput, note]);
+  }, [title, name, price, persona, penInput, note, made, aiTool]);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -397,6 +410,27 @@ export default function Register() {
                   </span>
                 </label>
               )}
+
+              <fieldset className="mt-7">
+                <legend className="text-sm" style={{ color: 'var(--ink-muted)' }}>How was it made?</legend>
+                <div className="mt-2 inline-flex flex-wrap rounded-full border p-1" style={{ borderColor: 'var(--rule)' }}>
+                  {([['camera', 'Photo'], ['humanMade', 'Artwork'], ['aiGenerated', 'AI-generated']] as const).map(([k, label]) => (
+                    <button key={k} type="button" onClick={() => setMade(k)}
+                            className="rounded-full px-4 py-1.5 text-sm transition-colors"
+                            style={made === k ? { background: 'var(--brand)', color: 'var(--paper)' } : { color: 'var(--ink-muted)' }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {made === 'aiGenerated' && (
+                  <input value={aiTool} onChange={(e) => setAiTool(e.target.value)} maxLength={60}
+                         placeholder="Which tool? e.g. ChatGPT, Midjourney"
+                         className="mt-3 w-full rounded-lg px-4 py-3 text-base bg-transparent border" style={{ borderColor: 'var(--rule)' }} />
+                )}
+                <span className="mt-2 block text-sm" style={{ color: 'var(--ink-faint)' }}>
+                  Signed into the record in C2PA&rsquo;s terms, so an AI image can never pass as a photograph.
+                </span>
+              </fieldset>
 
               <fieldset className="mt-7">
                 <legend className="text-sm" style={{ color: 'var(--ink-muted)' }}>Publish as</legend>
@@ -520,6 +554,7 @@ export default function Register() {
                   as <span style={{ color: 'var(--ink)' }}>@{phase.handle}</span>
                 </p>
               )}
+              <MonadConfirmed p={phase.progress[0]} />
               <img src={phase.progress[0].item.preview} alt="" className="mt-7 w-full rounded-lg border"
                    style={{ borderColor: 'var(--rule)' }} />
               <div className="mt-7 rounded-lg px-5 py-4 text-left" style={{ background: 'var(--brand-soft)' }}>
@@ -693,6 +728,13 @@ function BatchDone({ progress, filename, handle }: { progress: Progress[]; filen
           as <span style={{ color: 'var(--ink)' }}>@{handle}</span>
         </p>
       )}
+      {done.some((p) => p.confirmMs !== undefined) && (
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm"
+           style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+          <span aria-hidden className="grain-live-dot" />
+          Each confirmed on Monad in {(done.reduce((s, p) => s + (p.confirmMs ?? 0), 0) / done.length / 1000).toFixed(1)} s on average
+        </p>
+      )}
       <ul className="mt-7 grid grid-cols-3 sm:grid-cols-4 gap-2 text-left">
         {progress.map((p) => (
           <li key={p.item.preview}>
@@ -732,5 +774,18 @@ function BatchDone({ progress, filename, handle }: { progress: Progress[]; filen
         </div>
       )}
     </div>
+  );
+}
+
+/** Monad's confirmation time and gas for a registration, as measured. */
+function MonadConfirmed({ p }: { p: Progress }) {
+  if (p.confirmMs === undefined) return null;
+  return (
+    <p className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm"
+       style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+      <span aria-hidden className="grain-live-dot" />
+      Confirmed on Monad in {(p.confirmMs / 1000).toFixed(1)} s
+      {p.gasUsed !== undefined && <span style={{ color: 'var(--ink-muted)' }}>&middot; {Number(p.gasUsed).toLocaleString()} gas</span>}
+    </p>
   );
 }

@@ -26,7 +26,7 @@ export { encodeCbor, decodeCbor, type CborValue } from './cbor.ts';
 export {
   buildManifest, encodeManifest, encodeSignedManifest, manifestHash,
   signManifest, signManifestWith, verifyManifest,
-  GRAIN_PHASH_ALG, TRUSTMARK_ALG, GRAIN_PHASH_ALG_ID,
-  type GrainManifest, type SoftBinding, type BuildManifestInput, type ManifestSigner,
+  GRAIN_PHASH_ALG, TRUSTMARK_ALG, GRAIN_PHASH_ALG_ID, DIGITAL_SOURCE, isAiGenerated,
+  type GrainManifest, type SoftBinding, type BuildManifestInput, type ManifestSigner, type CreatedAssertion,
 } from './manifest.ts';
 export { resolve, type Resolution, type ResolveInput, type ResolvedRecord } from './resolve.ts';

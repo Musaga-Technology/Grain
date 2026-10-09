@@ -19,6 +19,30 @@ export const TRUSTMARK_ALG = 'com.adobe.trustmark.Q';
 /** 0 means unregistered. grain.phash.v1 is ours and is NOT on the C2PA approved list. */
 export const GRAIN_PHASH_ALG_ID = 0;
 
+/**
+ * How the asset was made, in C2PA's vocabulary: the digitalSourceType of the
+ * c2pa.created action, drawn from the IPTC Digital Source Type list. Generated
+ * media says so -- the track's own example is provenance for generated media,
+ * and an honest registry must not let an AI image pass as a photograph.
+ */
+export const DIGITAL_SOURCE = {
+  /** Made by a generative model, e.g. ChatGPT, Midjourney. */
+  aiGenerated: 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia',
+  /** A camera capture. */
+  camera: 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture',
+  /** Made by a person with software: drawing, design, composites. */
+  humanMade: 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation',
+} as const;
+
+export interface CreatedAssertion {
+  digitalSourceType: string;
+  /** The generating tool, for AI media, e.g. "ChatGPT". */
+  softwareAgent?: string;
+}
+
+export const isAiGenerated = (m: { assertions?: { created?: CreatedAssertion } }) =>
+  m.assertions?.created?.digitalSourceType === DIGITAL_SOURCE.aiGenerated;
+
 export interface SoftBinding {
   alg: typeof TRUSTMARK_ALG | typeof GRAIN_PHASH_ALG;
   algId: number;
@@ -35,6 +59,7 @@ export interface GrainManifest {
     title?: string;
     generator?: string;
     license?: { priceWei: bigint; terms: string };
+    created?: CreatedAssertion;
   };
   private?: Hex;
   signature?: Hex;
@@ -50,6 +75,7 @@ export interface BuildManifestInput {
   title?: string;
   generator?: string;
   license?: { priceWei: bigint; terms: string };
+  created?: CreatedAssertion;
   private?: Hex;
 }
 
@@ -86,6 +112,7 @@ export function buildManifest(input: BuildManifestInput): GrainManifest {
       title: input.title,
       generator: input.generator,
       license: input.license,
+      created: input.created,
     },
     private: input.private,
   };

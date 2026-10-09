@@ -19,7 +19,12 @@ export default async function Image({ params }: { params: Promise<{ recordId: st
       eyebrow={r.title ? `“${r.title.slice(0, 40)}”` : `Record #${recordId}`}
       lead="Made by"
       headline={r.handle ? `@${r.handle}` : 'an unnamed creator'}
-      lines={[`Registered ${date}`, r.watermarked ? 'Invisible watermark + fingerprint' : 'Content fingerprint']}
+      lines={[
+        `Registered ${date}`,
+        r.created?.digitalSourceType?.endsWith('trainedAlgorithmicMedia')
+          ? `AI-generated${r.created.softwareAgent ? ` with ${r.created.softwareAgent}` : ''} · declared by the creator`
+          : r.watermarked ? 'Invisible watermark + fingerprint' : 'Content fingerprint',
+      ]}
       fingerprint={r.fingerprint}
       footer={r.revoked ? 'Withdrawn by its creator' : 'Verified on Monad · checkable by anyone'}
     />,

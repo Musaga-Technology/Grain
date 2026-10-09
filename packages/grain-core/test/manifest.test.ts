@@ -122,3 +122,20 @@ test('CBOR keeps integers past 2^53 as bigint', async () => {
   const { decodeCbor } = await import('../src/index.ts');
   assert.equal(decodeCbor(encodeCbor(2n ** 63n)), 2n ** 63n);
 });
+
+test('generated media is declared in C2PA terms, and the declaration is signed', async () => {
+  const { DIGITAL_SOURCE, isAiGenerated, signManifest, verifyManifest } = await import('../src/index.ts');
+  const key = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d';
+  const { privateKeyToAccount } = await import('viem/accounts');
+  const creator = privateKeyToAccount(key).address;
+  const m = buildManifest({ recordId: 7n, creator, fingerprint: 0x1234n,
+    created: { digitalSourceType: DIGITAL_SOURCE.aiGenerated, softwareAgent: 'ChatGPT' } });
+  assert.equal(isAiGenerated(m), true);
+  assert.equal(m.assertions.created?.softwareAgent, 'ChatGPT');
+  const signed = await signManifest(m, key);
+  assert.equal(await verifyManifest(signed), true);
+  // Relabelling an AI image as a camera capture must break the signature.
+  const relabelled = { ...signed, assertions: { ...signed.assertions, created: { digitalSourceType: DIGITAL_SOURCE.camera } } };
+  assert.equal(await verifyManifest(relabelled), false);
+  assert.equal(isAiGenerated(buildManifest({ recordId: 8n, creator, fingerprint: 1n })), false);
+});

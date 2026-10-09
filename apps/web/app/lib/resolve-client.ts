@@ -2,13 +2,14 @@
 
 import { createPublicClient, http, parseAbi, type PublicClient } from 'viem';
 import {
-  decodeImage, fingerprint, hammingDistance, resolve, toBands, TAMPER_THRESHOLD,
+  decodeCbor, decodeImage, fingerprint, hammingDistance, resolve, toBands, TAMPER_THRESHOLD,
+  type GrainManifest,
   type Resolution, type ResolvedRecord,
 } from '@grain/core';
 import { CONTRACTS, monadTestnet } from './chain';
 import { decodeWatermark, decoderReady } from './trustmark';
 import { handleOf } from './creators';
-import { candidatesByBands, type IndexedRecord } from './indexer';
+import { candidatesByBands, recordById, type IndexedRecord } from './indexer';
 
 /**
  * Resolution, entirely in the browser.
@@ -77,6 +78,7 @@ function fromIndexed(r: IndexedRecord): ResolvedRecord {
     blockNumber: r.blockNumber,
     supersededBy: r.supersededBy ? BigInt(r.supersededBy) : null,
     revoked: r.revoked,
+    manifest: decodeManifest(r.manifest),
   };
 }
 
@@ -205,5 +207,21 @@ async function attachHandles(r: Resolution): Promise<void> {
     : [];
   await Promise.all(records.map(async (rec) => {
     rec.creatorHandle ??= await handleOf(rec.creator);
+    // The manifest says how the image was made (e.g. AI-generated). Records
+    // found by watermark come from chain storage, which holds only its hash,
+    // so the manifest itself is read from the indexer.
+    if (!rec.manifest) {
+      const indexed = await recordById(rec.recordId.toString()).catch(() => null);
+      rec.manifest = decodeManifest(indexed?.manifest);
+    }
   }));
+}
+
+function decodeManifest(hex: string | undefined): GrainManifest | undefined {
+  if (!hex) return undefined;
+  try {
+    return decodeCbor(new Uint8Array((hex.slice(2).match(/../g) ?? []).map((b) => parseInt(b, 16)))) as unknown as GrainManifest;
+  } catch {
+    return undefined;
+  }
 }

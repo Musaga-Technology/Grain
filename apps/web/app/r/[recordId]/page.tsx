@@ -4,6 +4,7 @@ import { formatEther } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
 import { loadLicensing, loadRecord } from '../../lib/record-server';
 import { Share } from '../../components/Share';
+import { MadeWith } from '../../components/Result';
 
 /**
  * A permanent, shareable record page.
@@ -84,6 +85,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
                       style={{ textDecorationColor: 'var(--rule)' }}>@{record.handle}</Link>
               ) : <span className="whitespace-nowrap">an unnamed creator</span>}
             </h1>
+            <MadeWith manifest={{ assertions: { created: record.created } }} />
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
               registered {relativeTime(record.registeredAt)}
               {record.blockNumber && record.txHash && (

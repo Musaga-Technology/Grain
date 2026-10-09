@@ -83,6 +83,8 @@ const TEST_ACCOUNTS = [
   '0x35de9bfda0175b0a95d8c6d12919f0b8987aa5e7', // @night-shift-demo
   '0x5e671f97c5326a23edeeb21b5b8ebec1157b970e', // @grain-mera-prod
   '0xd36fc6731d64e1028f5ca65bc21c0f74f32315de', // @night-shift-prod
+  '0xe7feddec71dd3a1a84399831f2cc0457ab97060e', // grain-ai-label-test
+  '0x8bc29bb1e8ea3dcbe80ed5ffb58aa1b379f2e96b', // grain-ai-label-test-8bc2
 ];
 
 const RECORD_FIELDS = `recordId creator fingerprint registeredAt blockNumber txHash manifest revoked supersededBy

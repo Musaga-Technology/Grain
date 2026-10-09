@@ -7,6 +7,8 @@ export interface ResolvedRecord {
   blockNumber?: number;
   supersededBy?: string | null;
   revoked: boolean;
+  /** The signed manifest, when the indexer supplied it; says how the image was made. */
+  manifest?: { assertions?: { created?: { digitalSourceType?: string; softwareAgent?: string } } };
 }
 
 /** What the resolver adds alongside the resolution itself. */
