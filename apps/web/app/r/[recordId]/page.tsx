@@ -18,7 +18,7 @@ import { MadeWith } from '../../components/Result';
 
 export const revalidate = 60;
 
-const EXPLORER = 'https://testnet.monadexplorer.com';
+const EXPLORER = 'https://testnet.monadscan.com';
 
 export async function generateMetadata({ params }: { params: Promise<{ recordId: string }> }): Promise<Metadata> {
   const { recordId } = await params;

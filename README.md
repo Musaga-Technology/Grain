@@ -205,7 +205,7 @@ Gas figures in [docs/GAS.md](docs/GAS.md).
 
 - **Adobe's TrustMark implementations disagree.** Grain's watermarks have to be readable by any TrustMark decoder, so we checked against all three Adobe ships. For the BCH_SUPER error-correction scheme, Adobe's Python reference and JavaScript library produce identical parity, but the Rust crate does not: it pads 40 data bits to 6 bytes where Python uses 5, and its leftover-byte loop drops Python's `pidx += 1`. So BCH_SUPER marks don't read across implementations. Grain ships **BCH_5**, which they all agree on: our browser encoder's codewords are bit-identical to Adobe's Python reference, and the Rust CLI reads them.
 - **The tamper threshold in our own spec was wrong.** At the planned value of 12, a third of legitimate 10% crops were flagged as stolen credentials. Measured against 210 unrelated image pairs, **16** catches every genuine transfer while nearly eliminating false alarms.
-- **MetaMask's Agent Wallet lists Monad testnet but can't send on it out of the box.** `mm chains list` includes Monad Testnet (10143), yet two MetaMask services behind the wallet answer `Invalid chainId` (HTTP 400) for it: the gas-fee estimate API, and the Infura proxy `mm` uses as the chain's RPC, so the block tracker never starts. Every testnet transaction fails before it's sent. We traced both in `mm`'s code and worked around them with its own mechanisms: the plugin supplies `gas` and fee caps read from Monad's RPC (`mm` skips its fee API when they're present), and adds one `customEvmChains` entry pointing chain 10143 at `https://testnet-rpc.monad.xyz` (`mm` checks custom chains before its proxy). The first licence through MetaMask's server wallet went through on that path: [`0xc9e76b7b…6b17`](https://testnet.monadexplorer.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17). Details in [plugins/mm-grain](plugins/mm-grain#monad-testnet-and-metamasks-wallet).
+- **MetaMask's Agent Wallet lists Monad testnet but can't send on it out of the box.** `mm chains list` includes Monad Testnet (10143), yet two MetaMask services behind the wallet answer `Invalid chainId` (HTTP 400) for it: the gas-fee estimate API, and the Infura proxy `mm` uses as the chain's RPC, so the block tracker never starts. Every testnet transaction fails before it's sent. We traced both in `mm`'s code and worked around them with its own mechanisms: the plugin supplies `gas` and fee caps read from Monad's RPC (`mm` skips its fee API when they're present), and adds one `customEvmChains` entry pointing chain 10143 at `https://testnet-rpc.monad.xyz` (`mm` checks custom chains before its proxy). The first licence through MetaMask's server wallet went through on that path: [`0xc9e76b7b…6b17`](https://testnet.monadscan.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17). Details in [plugins/mm-grain](plugins/mm-grain#monad-testnet-and-metamasks-wallet).
 - **The onchain index has a ceiling.** Over 913 real photos, the busiest LSH bucket held ~5× the average. Projected to a million records, reading it costs ~11.5 M gas in one call — inside a 150 M block limit, but within an order of magnitude. The production path is search off chain through the indexer, then prove the winner on chain with `verify()`.
 
 ## Honest about conformance
@@ -226,11 +226,11 @@ All five contracts are verified on Sourcify, so their source is readable on the 
 
 | Contract — Monad testnet, chain 10143 | Address |
 |---|---|
-| GrainRegistry | [`0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20`](https://testnet.monadexplorer.com/address/0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20) |
-| FingerprintIndex | [`0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203`](https://testnet.monadexplorer.com/address/0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203) |
-| CreatorRegistry | [`0x783159d464B15180935222b342aEDc3Cf5ff2DE7`](https://testnet.monadexplorer.com/address/0x783159d464B15180935222b342aEDc3Cf5ff2DE7) |
-| LicenseRegistry | [`0x71260B7e406566D0fd880320b58537eE27895B1E`](https://testnet.monadexplorer.com/address/0x71260B7e406566D0fd880320b58537eE27895B1E) |
-| ActivityAnchor | [`0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56`](https://testnet.monadexplorer.com/address/0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56) |
+| GrainRegistry | [`0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20`](https://testnet.monadscan.com/address/0x180eC6A4FaF1a081e3eE3Fb4540fd3Df6d1A4c20) |
+| FingerprintIndex | [`0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203`](https://testnet.monadscan.com/address/0x68A3c6A0654af33b9f0E6Ba52ccc44B0C10e7203) |
+| CreatorRegistry | [`0x783159d464B15180935222b342aEDc3Cf5ff2DE7`](https://testnet.monadscan.com/address/0x783159d464B15180935222b342aEDc3Cf5ff2DE7) |
+| LicenseRegistry | [`0x71260B7e406566D0fd880320b58537eE27895B1E`](https://testnet.monadscan.com/address/0x71260B7e406566D0fd880320b58537eE27895B1E) |
+| ActivityAnchor | [`0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56`](https://testnet.monadscan.com/address/0x4F728dd37Bc38Db5C594ff17c8FC2dbc7Ed28e56) |
 
 ```bash
 pnpm install

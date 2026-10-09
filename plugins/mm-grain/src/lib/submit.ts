@@ -77,7 +77,7 @@ export const MONAD_TESTNET_RPC = {
   caip2: `eip155:${REGISTRY_CHAIN_ID}`,
   name: 'Monad Testnet',
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
-  blockExplorer: 'https://testnet.monadexplorer.com',
+  blockExplorer: 'https://testnet.monadscan.com',
   rpcTarget: 'https://testnet-rpc.monad.xyz',
 };
 

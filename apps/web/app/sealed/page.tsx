@@ -37,7 +37,7 @@ export default function Sealed() {
           </p>
           <p className="mt-2">
             Contract:{' '}
-            <a href={`https://testnet.monadexplorer.com/address/${CONTRACTS.ActivityAnchor}`} target="_blank" rel="noreferrer"
+            <a href={`https://testnet.monadscan.com/address/${CONTRACTS.ActivityAnchor}`} target="_blank" rel="noreferrer"
                className="font-mono text-[12px] underline underline-offset-4 break-all">{CONTRACTS.ActivityAnchor} &#8599;</a>
           </p>
         </div>

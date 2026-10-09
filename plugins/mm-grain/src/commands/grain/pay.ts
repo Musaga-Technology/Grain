@@ -73,6 +73,6 @@ export default class GrainPay extends PluginCommand<PayResult> {
     const to = who({ creatorHandle: r.creatorHandle ?? undefined, creator: r.creator });
     if (!r.sent) return `Would send ${r.amount} on chain ${r.chainId} to ${to} (${r.creator}), the creator of record ${r.recordId}. Nothing was sent.`;
     if (r.failureReason) return `Payment to ${to} did not go through: ${r.failureReason}`;
-    return `Sent ${r.amount} on chain ${r.chainId} to ${to}, the creator of record ${r.recordId}.${r.hash ? `\nTransaction: ${r.hash}` : ''}`;
+    return `Sent ${r.amount} on chain ${r.chainId} to ${to}, the creator of record ${r.recordId}.${r.hash ? `\nTransaction: ${r.chainId === 10143 ? `https://testnet.monadscan.com/tx/${r.hash}` : r.hash}` : ''}`;
   }
 }

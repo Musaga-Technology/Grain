@@ -56,7 +56,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ handle
             <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ink-faint)' }}>Creator</p>
             <h1 style={{ fontFamily: 'var(--serif)' }} className="mt-2 text-4xl sm:text-5xl">@{creator.handle}</h1>
             <p className="mt-3 font-mono text-[12px] break-all" style={{ color: 'var(--ink-faint)' }}>
-              <a href={`https://testnet.monadexplorer.com/address/${creator.address}`} target="_blank" rel="noreferrer"
+              <a href={`https://testnet.monadscan.com/address/${creator.address}`} target="_blank" rel="noreferrer"
                  className="underline underline-offset-4">{creator.address} &#8599;</a>
             </p>
             <div className="mt-6">
@@ -84,7 +84,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ handle
   );
 }
 
-const EXPLORER = 'https://testnet.monadexplorer.com';
+const EXPLORER = 'https://testnet.monadscan.com';
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 /** MON with no more decimals than it needs: 0.01, 1.25, 12. */
 const mon = (wei: bigint) => {

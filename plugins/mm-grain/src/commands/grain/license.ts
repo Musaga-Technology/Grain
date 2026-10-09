@@ -67,6 +67,6 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
     const to = who({ creatorHandle: r.creatorHandle ?? undefined, creator: r.creator });
     if (!r.sent) return `Licensing record ${r.recordId} costs ${r.price} MON, paid in full to ${to}. Nothing was sent.`;
     if (r.failureReason) return `The licence did not go through: ${r.failureReason}`;
-    return `Licensed record ${r.recordId} from ${to} for ${r.price} MON.${r.hash ? `\nTransaction: ${r.hash}` : ''}\n${r.recordUrl}`;
+    return `Licensed record ${r.recordId} from ${to} for ${r.price} MON.${r.hash ? `\nTransaction: ${r.chainId === 10143 ? `https://testnet.monadscan.com/tx/${r.hash}` : r.hash}` : ''}\n${r.recordUrl}`;
   }
 }

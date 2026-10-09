@@ -44,7 +44,9 @@ const MAX_BATCH = 10;
 
 interface Item { file: File; preview: string; wideRatio: boolean }
 type ItemStatus = 'waiting' | 'working' | 'done' | 'failed';
-interface Progress { item: Item; status: ItemStatus; recordId?: string; confirmMs?: number; gasUsed?: bigint }
+interface Progress { item: Item; status: ItemStatus; recordId?: string; confirmMs?: number; gasUsed?: bigint; txHash?: string }
+
+const MONADSCAN = 'https://testnet.monadscan.com';
 
 type Phase =
   | { kind: 'choosing' }
@@ -303,6 +305,7 @@ export default function Register() {
               // Shown on the success screen: Monad's speed, measured, not claimed.
               p.confirmMs = performance.now() - sentAt;
               p.gasUsed = receipt.gasUsed;
+              p.txHash = hash;
               break;
             } catch (e) {
               const collided = (await nextRecordId().catch(() => recordId)) > recordId;
@@ -753,12 +756,18 @@ function BatchDone({ progress, filename, handle }: { progress: Progress[]; filen
       <ul className="mt-7 grid grid-cols-3 sm:grid-cols-4 gap-2 text-left">
         {progress.map((p) => (
           <li key={p.item.preview}>
-            {p.recordId ? (
+            {p.recordId ? (<>
               <a href={`/r/${p.recordId}`} className="block overflow-hidden rounded-md border" style={{ borderColor: 'var(--rule)' }}>
                 <img src={p.item.preview} alt="" className="aspect-square w-full object-cover" />
                 <span className="block px-2 py-1 text-[12px]">Record #{p.recordId}</span>
               </a>
-            ) : (
+              {p.txHash && (
+                <a href={`${MONADSCAN}/tx/${p.txHash}`} target="_blank" rel="noreferrer"
+                   className="mt-1 block text-[11px] underline underline-offset-2" style={{ color: 'var(--ink-faint)' }}>
+                  Monadscan &#8599;
+                </a>
+              )}
+            </>) : (
               <div className="overflow-hidden rounded-md border" style={{ borderColor: 'var(--accent)' }}>
                 <img src={p.item.preview} alt="" className="aspect-square w-full object-cover opacity-50" />
                 <span className="block px-2 py-1 text-[12px]" style={{ color: 'var(--accent)' }}>Not registered</span>
@@ -801,6 +810,11 @@ function MonadConfirmed({ p }: { p: Progress }) {
       <span aria-hidden className="grain-live-dot" />
       Confirmed on Monad in {(p.confirmMs / 1000).toFixed(1)} s
       {p.gasUsed !== undefined && <span style={{ color: 'var(--ink-muted)' }}>&middot; {Number(p.gasUsed).toLocaleString()} gas</span>}
+      {p.txHash && (
+        <a href={`${MONADSCAN}/tx/${p.txHash}`} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+          View on Monadscan &#8599;
+        </a>
+      )}
     </p>
   );
 }
