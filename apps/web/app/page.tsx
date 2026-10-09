@@ -33,6 +33,12 @@ const STEPS = [
   },
 ];
 
+const MONAD_FACTS = [
+  { value: '0.5 s', label: 'median from sending a registration to its confirmed receipt' },
+  { value: '8,687 gas', label: 'for anyone to prove, on chain, how close an image is to a record' },
+  { value: '~93k gas', label: 'to register an image: one record and eight on-chain index entries' },
+];
+
 export const revalidate = 15;
 
 export default function Landing() {
@@ -115,6 +121,28 @@ export default function Landing() {
               Grain keeps that registry open. Anyone can read it, anyone can check an answer
               against it, and no single company can retract yours.
             </p>
+          </div>
+        </section>
+
+        <section className="border-t" style={{ borderColor: 'var(--rule)', background: 'var(--surface)' }}>
+          <div className="mx-auto max-w-5xl px-5 py-16 sm:py-20">
+            <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ink-faint)' }}>Built on Monad</p>
+            <h2 style={{ fontFamily: 'var(--serif)' }} className="mt-2 text-2xl sm:text-3xl max-w-2xl">
+              A registry that searches itself, and proves the answer
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+              The fingerprint index lives on chain, so anyone can find an image&rsquo;s record and prove the match without
+              trusting a server, ours included. That only works where a record per image is cheap and instant.
+            </p>
+            <dl className="mt-10 grid gap-4 sm:grid-cols-3">
+              {MONAD_FACTS.map((f) => (
+                <div key={f.label} className="grain-card rounded-lg p-5">
+                  <dd style={{ fontFamily: 'var(--serif)' }} className="text-3xl">{f.value}</dd>
+                  <dt className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--ink-muted)' }}>{f.label}</dt>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-4 text-xs" style={{ color: 'var(--ink-faint)' }}>Measured on Monad testnet. Method and figures in the README.</p>
           </div>
         </section>
 

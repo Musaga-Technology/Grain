@@ -5,9 +5,9 @@
  */
 export function RecordCard() {
   const rows: [string, string][] = [
-    ['Made by', '@ana-ruiz'],
-    ['Registered', 'block 65,182,045'],
-    ['Fingerprint', '0xcb3299ca67a56a24'],
+    ['Made by', '@grain-studio'],
+    ['Registered', 'block 69,268,419'],
+    ['Fingerprint', '0xc1c2c2265d5b3e3c'],
     ['Watermark', 'TrustMark Q'],
   ];
   return (
@@ -17,7 +17,7 @@ export function RecordCard() {
       <div className="absolute inset-0 translate-x-2 translate-y-2 rounded-xl border opacity-75"
            style={{ borderColor: 'var(--rule)', background: 'var(--surface)' }} />
       <div className="relative rounded-xl border px-6 py-5" style={{ borderColor: 'var(--rule)', background: 'var(--paper)' }}>
-        <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ink-faint)' }}>Record 508</p>
+        <p className="text-xs tracking-widest uppercase" style={{ color: 'var(--ink-faint)' }}>Record 511</p>
         <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-5 gap-y-2.5 text-sm">
           {rows.map(([k, v]) => (
             <div key={k} className="contents">

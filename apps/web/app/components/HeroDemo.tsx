@@ -35,8 +35,8 @@ export function HeroDemo() {
       {/* And the answer that survives it. */}
       <div className="grain-rise grain-delay-3 absolute -bottom-8 right-2 sm:-right-4 rounded-xl border px-5 py-4 shadow-md max-w-[16rem]"
            style={{ background: 'var(--paper)', borderColor: 'var(--rule)' }}>
-        <p style={{ fontFamily: 'var(--serif)' }} className="text-xl leading-tight">Made by @ana-ruiz</p>
-        <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>registered 12 days ago</p>
+        <p style={{ fontFamily: 'var(--serif)' }} className="text-xl leading-tight">Made by @grain-studio</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>registered on Monad &middot; record #511</p>
         <p className="mt-2 text-xs" style={{ color: 'var(--ink-faint)' }}>matched by watermark and content</p>
       </div>
     </div>

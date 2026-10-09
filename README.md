@@ -62,10 +62,10 @@ flowchart LR
 
 ## Why Monad
 
-1. **Per-asset registration has to be cheap.** Every photo, edit and republish is a row. Measured: **~93k gas** to register once the index is warm. Manifests live in event data rather than storage, so the 16 KB cap costs only 2.7× a 256 B manifest.
-2. **It has to be fast enough to disappear into a product.** End to end — passkey, watermark, name, confirmed on chain — registration takes **13–15 seconds** in a real browser, most of it watermarking on the device. The chain is not the slow part.
-3. **Anyone can check the answer.** A database can tell you who made an image; it cannot let you verify that without trusting it. `FingerprintIndex.verify()` returns the distance between any record and any image **from the chain itself, for 8,687 gas** — the "verify on chain" link on every result.
-4. **Nobody can retract your provenance**, and block order settles who registered first.
+1. **The registry searches itself, and proves the answer.** The fingerprint index lives on chain: anyone can find an image's candidates with `queryBand` and prove a match with `FingerprintIndex.verify()`, **8,687 gas**, with no server involved. Envio makes reads fast, but the chain alone can always answer. That only stays practical with room to grow: at a million records the busiest fingerprint bucket costs about **11.5M gas** to read in one call, under a tenth of Monad's **150M-gas** block.
+2. **One record per image is only viable where writes are cheap.** Each registration stores a record and eight index entries: **~93k gas** once the index is warm. Manifests live in event data rather than storage, so a 16 KB manifest costs only 2.7× a 256 B one.
+3. **Fast enough to disappear into a product.** Measured on Monad testnet: blocks about every **0.3 s**, and a median **0.53 s** from sending a transaction to its confirmed receipt. The registration screen shows the real figure every time ("Confirmed on Monad in 0.6 s"). Watermarking on the device is the slow part, not the chain.
+4. **Nobody can retract your provenance,** and block order settles who registered first.
 
 Identity is built entirely on **Mera**, Monad's passkey account layer: no seed phrase, no browser extension, no custody backend. **One passkey, one prompt, many keys.** A single passkey assertion returns one PRF output, and everything is derived from it in the browser, then wiped:
 
