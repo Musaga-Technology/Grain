@@ -27,7 +27,8 @@
   "scripts": {
     "build": "node build.mjs && oclif manifest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "link-host": "node link-host.mjs"
   },
   "oclif": {
     "bin": "mm",

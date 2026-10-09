@@ -89,9 +89,12 @@ From this repository:
 
 ```bash
 cd plugins/mm-grain && npm install && npm run build
+npm run link-host        # use the installed mm's own CLI package, not a copy (see link-host.mjs)
 mm config set experimentalAllowUnverifiedInstalls true
 mm plugins install "file:$PWD" --accept-permissions
 ```
+
+Skip `link-host` and the plugin loads a second copy of the CLI, which crashes with `window.addEventListener is not a function`. Installs from npm don't need it; mm links its own copy for those.
 
 ## How it works
 
