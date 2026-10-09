@@ -247,54 +247,69 @@ export default function Register() {
           // as expectedRecordId and reverts if another registration landed
           // first, rather than binding this mark to someone else's record.
           const original = decodeImage(new Uint8Array(await p.item.file.arrayBuffer()));
-          const recordId = await nextRecordId();
           const watermarked = canWatermark(original);
-          const markedImage = watermarked ? await encodeWatermark(original, recordId) : original;
+          // Every registration claims the next id from one shared counter. If
+          // someone else's lands in between, ours is refused (UnexpectedRecordId)
+          // because our watermark already carries the old id -- so re-mark with
+          // the new id and try again. Detected by the counter having moved past
+          // the id we tried, not by the error's wording.
+          let recordId = 0n, markedImage = original, attempts = 0;
+          for (;;) {
+            attempts++;
+            recordId = await nextRecordId();
+            markedImage = watermarked ? await encodeWatermark(original, recordId) : original;
 
-          step(`Fingerprinting${of}`);
-          // The fingerprint of the MARKED image, since that is the copy people
-          // will publish and the one the anti-spoof check compares against.
-          const fp = fingerprint(markedImage);
+            step(`Fingerprinting${of}`);
+            // The fingerprint of the MARKED image, since that is the copy people
+            // will publish and the one the anti-spoof check compares against.
+            const fp = fingerprint(markedImage);
 
-          step(`Signing${of}`);
-          const manifest = await signManifestWith(
-            buildManifest({
-              recordId,
-              creator: session.account.address as Hex,
-              fingerprint: fp,
-              // One title can't describe ten images; a batch goes untitled.
-              title: batch ? undefined : title || undefined,
-              generator: 'Grain Web 0.1.0',
-              // Images past 2:1 are registered by fingerprint alone, and the
-              // manifest says so rather than claiming a mark that is not there.
-              watermarked,
-              // Ciphertext only: the note never leaves this browser readable.
-              private: sealedNote,
-              created: {
-                digitalSourceType: DIGITAL_SOURCE[made],
-                ...(made === 'aiGenerated' && aiTool.trim() ? { softwareAgent: aiTool.trim().slice(0, 60) } : {}),
-              },
-            }),
-            session.account,
-          );
+            step(`Signing${of}`);
+            const manifest = await signManifestWith(
+              buildManifest({
+                recordId,
+                creator: session.account.address as Hex,
+                fingerprint: fp,
+                // One title can't describe ten images; a batch goes untitled.
+                title: batch ? undefined : title || undefined,
+                generator: 'Grain Web 0.1.0',
+                // Images past 2:1 are registered by fingerprint alone, and the
+                // manifest says so rather than claiming a mark that is not there.
+                watermarked,
+                // Ciphertext only: the note never leaves this browser readable.
+                private: sealedNote,
+                created: {
+                  digitalSourceType: DIGITAL_SOURCE[made],
+                  ...(made === 'aiGenerated' && aiTool.trim() ? { softwareAgent: aiTool.trim().slice(0, 60) } : {}),
+                },
+              }),
+              session.account,
+            );
 
-          step(`Recording it${of}`);
-          const hash = await afterFunding(() => wallet.writeContract({
-            address: CONTRACTS.GrainRegistry,
-            abi: registryAbi,
-            functionName: 'register',
-            args: [recordId, fp, bytesToHex(encodeSignedManifest(manifest))],
-          }));
-          // Confirmed, not just sent. register() reverts if another
-          // registration took this recordId first, and reporting that as
-          // success would hand the person a watermark pointing at someone
-          // else's record.
-          const sentAt = performance.now();
-          const receipt = await reader.waitForTransactionReceipt({ hash });
-          if (receipt.status !== 'success') throw new Error('registration reverted');
-          // Shown on the success screen: Monad's speed, measured, not claimed.
-          p.confirmMs = performance.now() - sentAt;
-          p.gasUsed = receipt.gasUsed;
+            step(attempts > 1 ? `Someone registered at the same moment, trying again${of}` : `Recording it${of}`);
+            try {
+              const hash = await afterFunding(() => wallet.writeContract({
+                address: CONTRACTS.GrainRegistry,
+                abi: registryAbi,
+                functionName: 'register',
+                args: [recordId, fp, bytesToHex(encodeSignedManifest(manifest))],
+              }));
+              // Confirmed, not just sent: reporting a reverted registration as
+              // success would hand the person a watermark pointing at someone
+              // else's record.
+              const sentAt = performance.now();
+              const receipt = await reader.waitForTransactionReceipt({ hash });
+              if (receipt.status !== 'success') throw new Error('registration reverted');
+              // Shown on the success screen: Monad's speed, measured, not claimed.
+              p.confirmMs = performance.now() - sentAt;
+              p.gasUsed = receipt.gasUsed;
+              break;
+            } catch (e) {
+              const collided = (await nextRecordId().catch(() => recordId)) > recordId;
+              if (!collided || attempts >= 3) throw e;
+              step(`Adding the invisible mark again${of}`);
+            }
+          }
 
           marked[uniqueName(marked, p.item.file.name.replace(/(\.\w+)?$/, '-grain.png'))] = encodePNG(markedImage);
           p.status = 'done';
