@@ -9,8 +9,9 @@ export function Header() {
                 style={{ background: 'var(--brand)' }} />
           <span style={{ fontFamily: 'var(--serif)' }} className="text-xl">Grain</span>
         </Link>
-        <nav className="flex items-center gap-6 text-sm">
+        <nav className="flex items-center gap-4 sm:gap-6 text-sm">
           <Link href="/verify" className="hover:underline underline-offset-4">Verify</Link>
+          <Link href="/me" className="hover:underline underline-offset-4">Your work</Link>
           <Link href="/register" className="grain-btn px-4 py-2 rounded-full text-sm">
             Register an image
           </Link>

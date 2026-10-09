@@ -132,6 +132,12 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
                   </span>
                 </li>
               )}
+              {record.manifest && (record.manifest as { private?: string }).private && (
+                <li className="flex gap-3 text-[15px]">
+                  <span aria-hidden className="w-4 shrink-0" style={{ color: 'var(--ink-faint)' }}>·</span>
+                  <span>Has a private note, encrypted with the creator&rsquo;s passkey: only they can read it</span>
+                </li>
+              )}
               {record.watermarked !== undefined && (
                 <li className="flex gap-3 text-[15px]">
                   <span aria-hidden className="w-4 shrink-0" style={{ color: 'var(--ink-faint)' }}>·</span>

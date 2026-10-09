@@ -68,6 +68,19 @@ const TEST_ACCOUNTS = [
   '0x23da2c297799cdf7a5cb1b61ac7560b8933da6e9', // name only
   '0x31c7b16f59f1c5f5687ef27ba02aa7ae91fe1562', // @grain-batch-test
   '0x19870645f6a7fefb8a6afb0a0ce3d705c495dfdb', // @grain-single-test
+  // Mera test runs: names, pen names, and registrations whose naming step failed
+  '0x5fc0336e53d946c11e81c649938e9fda6ad236c6', // (no name) record 518
+  '0x4633705fd7f384b2e36e03ed018c261400fe8943', // @night-shift-test
+  '0xb002e4fa7f17bec766b0d55669b0d4bb80ffcb8b', // @grain-mera-check
+  '0xe97d8a77958780eacf8b8bc15cba08b3d773c5db', // (no name) record 521
+  '0xf3cd09867b63a042199953027c7c002157299238', // @grain-mera-final
+  '0x0716ff7d5dfb9d559600b912d581f6892e93876a', // (no name) record 523
+  '0x46d0c575d618f1d7dc7c2b0a264ce2da481c9a93', // @grain-mera-final-46d0
+  '0x88715d53364d27b9cc2cd8b4a773f81c4a33ffe7', // (no name) record 525
+  '0xfe421a10a477a1eda8931b8732fbfddca994f5bd', // @grain-mera-run
+  '0x8705e31b214fe76b6aac9d8269ba72c561ea8b59', // @night-shift-run
+  '0x47a450751c74f6bfced7a4f3d223c14cc9a0840f', // @grain-mera-demo
+  '0x35de9bfda0175b0a95d8c6d12919f0b8987aa5e7', // @night-shift-demo
 ];
 
 const RECORD_FIELDS = `recordId creator fingerprint registeredAt blockNumber txHash manifest revoked supersededBy
@@ -147,6 +160,24 @@ export async function creatorByHandle(handle: string): Promise<CreatorPage | nul
     address: c.id, handle: c.handle, recordCount: c.recordCount, records: c.records,
     licencePriceWei: c.licensePriceWei, licences: lic?.License ?? [],
   };
+}
+
+/** A creator's page by address -- for "Your work", where the addresses come from the passkey. */
+export async function creatorByAddress(address: string): Promise<CreatorPage | null | 'unavailable'> {
+  const data = await query<{ Creator: { handle: string | null }[] }>(
+    `query($a:String!){ Creator(where:{id:{_eq:$a}}){ handle } }`, { a: address.toLowerCase() },
+  );
+  if (data === null) return 'unavailable';
+  const handle = data.Creator[0]?.handle;
+  if (handle) return creatorByHandle(handle);
+  // Records but no name yet: list them directly.
+  const recs = await query<{ Record: IndexedRecord[] }>(
+    `query($a:String!){ Record(where:{creator:{_eq:$a}}, order_by:{recordId:desc}, limit:60){ ${RECORD_FIELDS} } }`, { a: address.toLowerCase() },
+  );
+  if (!recs) return 'unavailable';
+  return recs.Record.length
+    ? { address: address.toLowerCase(), handle: '', recordCount: recs.Record.length, records: recs.Record, licencePriceWei: '0', licences: [] }
+    : null;
 }
 
 export async function registryStats(): Promise<{ records: number; creators: number } | null> {

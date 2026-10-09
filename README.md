@@ -53,7 +53,15 @@ flowchart LR
 3. **Anyone can check the answer.** A database can tell you who made an image; it cannot let you verify that without trusting it. `FingerprintIndex.verify()` returns the distance between any record and any image **from the chain itself, for 8,687 gas** — the "verify on chain" link on every result.
 4. **Nobody can retract your provenance**, and block order settles who registered first.
 
-Identity is built on **Mera**, Monad's passkey account layer: a photographer's account is an ordinary EOA derived from their Face ID or fingerprint, and recoverable wherever the passkey syncs. One passkey yields three keys through separate PRF namespaces — a signing identity, unlinkable per-channel keys, and an encryption key for private manifest fields.
+Identity is built entirely on **Mera**, Monad's passkey account layer: no seed phrase, no browser extension, no custody backend. **One passkey, one prompt, many keys.** A single passkey assertion returns one PRF output, and everything is derived from it in the browser, then wiped:
+
+| Key | What it's for |
+|---|---|
+| **Identity** (`m/44'/60'/0'/0/0`) | the creator's account; signs every manifest and transaction |
+| **Pen names** (`m/44'/60'/1'/0/n`) | publish under another name; each is its own account, unlinkable on chain to your identity or to each other |
+| **Private-notes key** (HKDF, `grain.v1.private-notes`) | an optional note on each record (where it was shot, the client), sealed with AES-256-GCM before it leaves the device; only your passkey can read it |
+
+Signing keys run as Mera secp256k1 signing sessions through Mera's `toViemAccount`, so each key is zeroed when its session ends. Nothing derived is ever stored: at [**Your work**](https://grain-on-monad.vercel.app/me), one prompt on any device recovers your identity, finds every pen name by asking the chain, shows each one's records and earnings, and opens your private notes. The identity path goes through BIP-39, so the same account imports into MetaMask or Rabby: nobody is locked into Grain to control their own identity.
 
 ---
 

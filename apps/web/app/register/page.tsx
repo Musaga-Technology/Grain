@@ -9,7 +9,8 @@ import {
   aspectRatioWarning,
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
-import { identitySession, deviceSession, PasskeyUnavailable, storedCredential, type Session } from '../lib/mera';
+import { unlock, deviceKeyring, PasskeyUnavailable, storedCredential, type Keyring, type Session } from '../lib/mera';
+import { knownPenNames, rememberPenName, findPenSlot } from '../lib/pen-names';
 import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 import { monadTestnet, CONTRACTS, registryAbi, creatorAbi } from '../lib/chain';
 import { handleOf, toHandle, availableHandle } from '../lib/creators';
@@ -59,6 +60,14 @@ export default function Register() {
   const [name, setName] = useState('');
   // Optional, in MON. Per creator, not per image: that is how the contract stores it.
   const [price, setPrice] = useState('');
+  // Publish under the creator's own name, or a pen name: a separate account
+  // from the same passkey, unlinkable to the first on chain.
+  const [persona, setPersona] = useState<'main' | 'pen'>('main');
+  const [penInput, setPenInput] = useState('');
+  const [pens, setPens] = useState<{ n: number; handle: string }[]>([]);
+  useEffect(() => { setPens(knownPenNames()); }, []);
+  // Readable only with this passkey; signed into the manifest as ciphertext.
+  const [note, setNote] = useState('');
   // Asked once. A returning creator already has a name on chain, and the app
   // knows which visit this is without asking.
   const [firstVisit, setFirstVisit] = useState(true);
@@ -108,11 +117,11 @@ export default function Register() {
     const progress: Progress[] = items.map((item) => ({ item, status: 'waiting' }));
     const step = (message: string) => setPhase({ kind: 'working', message, progress: [...progress] });
 
-    let session: Session;
+    let ring: Keyring;
     if (useDeviceKey) {
       try {
         step('Setting up a key in this browser');
-        session = await deviceSession();
+        ring = await deviceKeyring();
       } catch (e) {
         setPhase({ kind: 'error', message: (e as Error).message, preview });
         return;
@@ -132,7 +141,7 @@ export default function Register() {
       step(storedCredential() ? 'Waiting for your passkey' : 'Creating your passkey');
       // The only authentication step in the product, once for the whole batch.
       // No seed phrase, no wallet connection, no network prompt.
-      session = await identitySession(title || undefined);
+      ring = await unlock(title || undefined);
     } catch (e) {
       if (e instanceof PasskeyUnavailable && e.code === 'PRF_UNAVAILABLE') {
         // Not a dead end: on desktop Chrome the passkey is fine, it is where
@@ -148,6 +157,16 @@ export default function Register() {
       });
       return;
     }
+    }
+
+    // One prompt unlocked every key. Choose which account publishes.
+    let session: Session = ring.identity;
+    const penHandle = persona === 'pen' ? toHandle(penInput) : '';
+    let penSlot: number | null = null;
+    if (penHandle) {
+      step('Finding your pen name');
+      penSlot = await findPenSlot(ring, penHandle);
+      session = ring.penName(penSlot);
     }
 
     // A passkey-derived account starts empty and the person has no way to
@@ -177,11 +196,11 @@ export default function Register() {
       // name is still a record, and a taken handle must not cost someone their
       // registration.
       handle = await handleOf(session.account.address);
-      const wanted = name.trim() ? toHandle(name) : null;
+      const wanted = penHandle || (name.trim() ? toHandle(name) : null);
       const priceWei = licencePriceWei(price);
       if (!handle && wanted) {
         try {
-          step('Saving your name');
+          step(penHandle ? 'Saving your pen name' : 'Saving your name');
           const chosen = await availableHandle(wanted, session.account.address);
           const tx = await afterFunding(() => wallet.writeContract({
             address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
@@ -206,6 +225,9 @@ export default function Register() {
           console.warn('could not save the licence price', e);
         }
       }
+
+      if (penHandle && penSlot !== null && handle) rememberPenName(penSlot, handle);
+      const sealedNote = note.trim() && items.length === 1 ? await ring.sealNote(note.trim()) : undefined;
 
       const batch = items.length > 1;
       for (const [i, p] of progress.entries()) {
@@ -241,6 +263,8 @@ export default function Register() {
               // Images past 2:1 are registered by fingerprint alone, and the
               // manifest says so rather than claiming a mark that is not there.
               watermarked,
+              // Ciphertext only: the note never leaves this browser readable.
+              private: sealedNote,
             }),
             session.account,
           );
@@ -296,9 +320,9 @@ export default function Register() {
         preview,
       });
     } finally {
-      session.end();
+      ring.end();
     }
-  }, [title, name, price]);
+  }, [title, name, price, persona, penInput, note]);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -348,7 +372,7 @@ export default function Register() {
                 </p>
               )}
 
-              {firstVisit && (
+              {firstVisit && persona === 'main' && (
                 <label className="block mt-7">
                   <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Your name</span>
                   <input
@@ -366,6 +390,55 @@ export default function Register() {
                       : 'This is how you’ll be credited when someone checks your image.'}
                   </span>
                 </label>
+              )}
+
+              <fieldset className="mt-7">
+                <legend className="text-sm" style={{ color: 'var(--ink-muted)' }}>Publish as</legend>
+                <div className="mt-2 inline-flex rounded-full border p-1" style={{ borderColor: 'var(--rule)' }}>
+                  {(['main', 'pen'] as const).map((p) => (
+                    <button key={p} type="button" onClick={() => setPersona(p)}
+                            className="rounded-full px-4 py-1.5 text-sm transition-colors"
+                            style={persona === p ? { background: 'var(--brand)', color: 'var(--paper)' } : { color: 'var(--ink-muted)' }}>
+                      {p === 'main' ? 'Under your name' : 'Under a pen name'}
+                    </button>
+                  ))}
+                </div>
+                {persona === 'pen' && (
+                  <div className="mt-3">
+                    {pens.length > 0 && (
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        {pens.map((p) => (
+                          <button key={p.n} type="button" onClick={() => setPenInput(p.handle)}
+                                  className="rounded-full border px-3 py-1 text-sm"
+                                  style={{ borderColor: toHandle(penInput) === p.handle ? 'var(--brand)' : 'var(--rule)' }}>
+                            @{p.handle}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <input value={penInput} onChange={(e) => setPenInput(e.target.value)} maxLength={60}
+                           placeholder="e.g. Night Shift Studio"
+                           className="w-full rounded-lg px-4 py-3 text-base bg-transparent border" style={{ borderColor: 'var(--rule)' }} />
+                    <span className="mt-2 block text-sm" style={{ color: 'var(--ink-faint)' }}>
+                      {toHandle(penInput) ? <>Credited as <span style={{ color: 'var(--ink)' }}>@{toHandle(penInput)}</span>. </> : null}
+                      A separate account from the same passkey. Nobody can link it to your name on chain; only you can.
+                    </span>
+                  </div>
+                )}
+              </fieldset>
+
+              {phase.items.length === 1 && (
+                <details className="mt-7 group" open={note !== ''}>
+                  <summary className="cursor-pointer text-sm select-none" style={{ color: 'var(--ink-muted)' }}>
+                    Add a private note (optional)
+                  </summary>
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3}
+                            placeholder="Where and how you made it, the client, the original file name…"
+                            className="mt-3 w-full rounded-lg px-4 py-3 text-base bg-transparent border" style={{ borderColor: 'var(--rule)' }} />
+                  <span className="mt-2 block text-sm" style={{ color: 'var(--ink-faint)' }}>
+                    Encrypted with your passkey before it leaves this device. It travels with the record, and only you can read it, on any device.
+                  </span>
+                </details>
               )}
 
               <details className="mt-7 group" open={price !== ''}>
@@ -542,8 +615,10 @@ function licencePriceWei(input: string): bigint | null {
  * tip, so for a second or two after the faucet's grant lands, a brand-new
  * account can still look empty and be refused with "insufficient balance".
  * Measured: a licence sent straight after funding failed once, then went
- * through two seconds later. Retry that one error, briefly; anything else is
- * a real failure and surfaces at once.
+ * through two seconds later, and a pen name's first transaction once failed
+ * for several seconds. The RPC reports it as "insufficient balance" or only as
+ * "Missing or invalid parameters". Retry those, for up to ~16 s; anything else
+ * is a real failure and surfaces at once.
  */
 async function afterFunding<T>(send: () => Promise<T>): Promise<T> {
   for (let attempt = 1; ; attempt++) {
@@ -551,8 +626,8 @@ async function afterFunding<T>(send: () => Promise<T>): Promise<T> {
       return await send();
     } catch (e) {
       const text = `${(e as { details?: string }).details ?? ''} ${(e as Error).message ?? ''}`;
-      if (attempt >= 5 || !/insufficient balance/i.test(text)) throw e;
-      await new Promise((r) => setTimeout(r, 1500));
+      if (attempt >= 8 || !/insufficient balance|missing or invalid parameters/i.test(text)) throw e;
+      await new Promise((r) => setTimeout(r, 2000));
     }
   }
 }

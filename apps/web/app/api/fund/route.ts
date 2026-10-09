@@ -104,6 +104,10 @@ export async function POST(req: Request) {
     chain: null,
   });
   await pub.waitForTransactionReceipt({ hash });
+  // Monad validates new transactions against state a few blocks behind the
+  // tip, so a balance can be confirmed here yet still look empty to the
+  // account's first transaction. Give it a moment before saying "go".
+  await new Promise((r) => setTimeout(r, 2000));
 
   return Response.json({ funded: true, hash });
 }

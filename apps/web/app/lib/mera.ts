@@ -1,50 +1,53 @@
 'use client';
 
 import {
-  createPasskeyWithPrfOutput, getPasskeyPrfOutput, isMeraError,
+  createPasskeyWithPrfOutput, createSecp256k1SigningSession, getPasskeyPrfOutput, isMeraError,
   type PasskeyCredentialTransport,
 } from '@category-labs/mera';
+import { toViemAccount } from '@category-labs/mera/viem';
 import { entropyToMnemonic, mnemonicToSeedSync } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
 import { HDKey } from '@scure/bip32';
 import { sha256 } from '@noble/hashes/sha2.js';
-import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
-import { bytesToHex, type Hex } from 'viem';
+import type { LocalAccount } from 'viem/accounts';
+import { bytesToHex, hexToBytes, type Hex } from 'viem';
 
 /**
- * Passkey identity.
+ * Passkey accounts, entirely on Mera: no seed phrase, no extension, no custody
+ * backend.
  *
- * One passkey, three key namespaces, distinguished by PRF salt. The passkey
- * never leaves the authenticator and nothing derived from it is persisted --
- * only the credential id and transports go to localStorage, and that metadata
- * holds no key material.
+ * ONE PASSKEY, ONE PROMPT, MANY KEYS. A single passkey assertion returns one
+ * PRF output; every key Grain uses is derived from it in the browser, then the
+ * output is wiped. Nothing derived is ever stored -- only the credential id
+ * and transports go to localStorage, and they hold no key material.
  *
- * THREE NAMESPACES:
- *   grain.identity.v1  the creator signing key, HD index 0. Signs every manifest.
- *   grain.channel.v1   per-channel publishing keys at HD index n. Registrations
- *                      are unlinkable across channels yet all recoverable from
- *                      the one passkey.
- *   grain.vault.v1     HKDF -> AES-256-GCM, encrypting private manifest fields.
+ *   identity    m/44'/60'/0'/0/0   the creator's account. Signs every manifest
+ *                                  and transaction.
+ *   pen names   m/44'/60'/1'/0/n   one account per pen name. Unlinkable on
+ *                                  chain to the identity or to each other, all
+ *                                  recoverable from the same passkey on any
+ *                                  device.
+ *   notes key   HKDF(prf, "grain.v1.private-notes") -> AES-256-GCM. Encrypts
+ *                                  a record's private note, which only this
+ *                                  passkey can read.
  *
- * Distinct salts matter: a vault key and a signing key derived from the same
- * PRF output would be the same secret wearing two hats.
+ * Signing keys run as Mera secp256k1 signing sessions, adapted to viem with
+ * Mera's toViemAccount, so a key lives exactly as long as its session and is
+ * zeroed when the session ends. The HD derivation goes through BIP-39 so the
+ * identity stays portable: the same words import into MetaMask or Rabby and
+ * produce the same address, and nobody is locked into Grain to control their
+ * own account.
  */
 
-export const NAMESPACES = {
-  identity: 'grain.identity.v1',
-  channel: 'grain.channel.v1',
-  vault: 'grain.vault.v1',
-} as const;
-
-export type Namespace = keyof typeof NAMESPACES;
+/** The PRF salt. Unchanged from the first release, so existing accounts keep their addresses. */
+const PRF_LABEL = 'grain.identity.v1';
+const NOTES_INFO = 'grain.v1.private-notes';
 
 const STORAGE_KEY = 'grain.credential.v1';
 const RP_NAME = 'Grain';
 
-/** Salts are sha256 of the namespace label, so they are stable and 32 bytes. */
-function saltFor(ns: Namespace): Uint8Array {
-  return sha256(new TextEncoder().encode(NAMESPACES[ns]));
-}
+/** sha256 of a fixed label: stable, and exactly the 32 bytes Mera requires. */
+const prfSalt = () => sha256(new TextEncoder().encode(PRF_LABEL));
 
 interface StoredCredential {
   credentialId: string;
@@ -87,8 +90,8 @@ export class PasskeyUnavailable extends Error {
   }
 }
 
-async function prfOutputFor(ns: Namespace, displayName?: string): Promise<Uint8Array> {
-  const prfSalt = saltFor(ns);
+async function prfOutput(displayName?: string): Promise<Uint8Array> {
+  const salt = prfSalt();
   const existing = storedCredential();
 
   try {
@@ -101,7 +104,7 @@ async function prfOutputFor(ns: Namespace, displayName?: string): Promise<Uint8A
           credentialId: existing.credentialId,
           transports: existing.transports as PasskeyCredentialTransport[] | undefined,
         },
-        prfSalt,
+        prfSalt: salt,
       });
       return prfOutput;
     }
@@ -109,7 +112,7 @@ async function prfOutputFor(ns: Namespace, displayName?: string): Promise<Uint8A
     const created = await createPasskeyWithPrfOutput({
       rp: { id: location.hostname, name: RP_NAME },
       user: { name: displayName ?? 'Grain creator', displayName: displayName ?? 'Grain creator' },
-      prfSalt,
+      prfSalt: salt,
     });
     remember({ credentialId: created.credentialId, transports: created.transports });
     return created.prfOutput;
@@ -122,76 +125,89 @@ async function prfOutputFor(ns: Namespace, displayName?: string): Promise<Uint8A
   }
 }
 
-/**
- * PRF output -> BIP-39 -> HD key.
- *
- * Deriving this way keeps the account portable: the mnemonic imports into
- * MetaMask or Rabby and produces the same address, so a creator is never
- * locked into Grain to control their own identity.
- */
-function accountFrom(prfOutput: Uint8Array, index: number): PrivateKeyAccount {
-  const mnemonic = entropyToMnemonic(prfOutput, wordlist);
-  const seed = mnemonicToSeedSync(mnemonic);
-  const key = HDKey.fromMasterSeed(seed).derive(`m/44'/60'/0'/0/${index}`);
-  if (!key.privateKey) throw new Error('derivation produced no private key');
-  return privateKeyToAccount(bytesToHex(key.privateKey) as Hex);
-}
-
 export interface Session {
-  account: PrivateKeyAccount;
-  /** Zeroes the derived material. Call when the signing session is over. */
+  /** A viem account backed by a Mera signing session. */
+  account: LocalAccount;
+  /** Ends the Mera signing session, zeroing its key. */
   end: () => void;
 }
 
-/** The creator signing key. HD index 0 of the identity namespace. */
+/** Everything one passkey prompt unlocks. */
+export interface Keyring {
+  /** The creator's main account. */
+  identity: Session;
+  /** Pen name n (1-based). Each is its own unlinkable account. */
+  penName: (n: number) => Session;
+  /** Encrypts a private note so only this passkey can read it. */
+  sealNote: (note: string) => Promise<Hex>;
+  /** Decrypts a note sealed by this passkey; null if it isn't ours or is damaged. */
+  openNote: (sealed: Hex) => Promise<string | null>;
+  /** Ends every session and wipes the derived material. */
+  end: () => void;
+}
+
+const IDENTITY_PATH = "m/44'/60'/0'/0/0";
+const penNamePath = (n: number) => `m/44'/60'/1'/0/${n}`;
+
+/** Builds the keyring from 32 bytes of entropy, then wipes the entropy. */
+export async function keyringFrom(entropy: Uint8Array): Promise<Keyring> {
+  const root = HDKey.fromMasterSeed(mnemonicToSeedSync(entropyToMnemonic(entropy, wordlist)));
+  const sessions: { end: () => void }[] = [];
+
+  const session = (path: string): Session => {
+    const key = root.derive(path).privateKey;
+    if (!key) throw new Error('derivation produced no private key');
+    const mera = createSecp256k1SigningSession({ privateKey: key });
+    key.fill(0);
+    sessions.push(mera);
+    return { account: toViemAccount(mera), end: () => mera.end() };
+  };
+
+  const base = await crypto.subtle.importKey('raw', entropy as BufferSource, 'HKDF', false, ['deriveKey']);
+  const notesKey = await crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32) as BufferSource, info: new TextEncoder().encode(NOTES_INFO) },
+    base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'],
+  );
+  entropy.fill(0);
+
+  const identity = session(IDENTITY_PATH);
+  const pens = new Map<number, Session>();
+  return {
+    identity,
+    penName: (n) => {
+      if (!Number.isInteger(n) || n < 1) throw new Error('pen names are numbered from 1');
+      if (!pens.has(n)) pens.set(n, session(penNamePath(n)));
+      return pens.get(n)!;
+    },
+    sealNote: async (note) => {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, notesKey, new TextEncoder().encode(note)));
+      const out = new Uint8Array(12 + ct.length);
+      out.set(iv); out.set(ct, 12);
+      return bytesToHex(out);
+    },
+    openNote: async (sealed) => {
+      try {
+        const bytes = hexToBytes(sealed);
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: bytes.slice(0, 12) }, notesKey, bytes.slice(12));
+        return new TextDecoder().decode(pt);
+      } catch {
+        return null;
+      }
+    },
+    end: () => { for (const s of sessions) s.end(); root.wipePrivateData(); },
+  };
+}
+
+/** One passkey prompt -> every key. Creates the passkey on a first visit. */
+export async function unlock(displayName?: string): Promise<Keyring> {
+  return keyringFrom(await prfOutput(displayName));
+}
+
+/** The creator signing key alone, for callers that need nothing else. */
 export async function identitySession(displayName?: string): Promise<Session> {
-  const prf = await prfOutputFor('identity', displayName);
-  const account = accountFrom(prf, 0);
-  return { account, end: () => prf.fill(0) };
-}
-
-/**
- * A per-channel publishing key: one per outlet, so registrations made under
- * different channels are unlinkable on chain while all remaining recoverable
- * from the single passkey.
- */
-export async function channelSession(index: number): Promise<Session> {
-  const prf = await prfOutputFor('channel');
-  const account = accountFrom(prf, index);
-  return { account, end: () => prf.fill(0) };
-}
-
-/**
- * AES-256-GCM key for private manifest fields (capture location, device,
- * client name). C2PA itself warns that identity assertions carry privacy
- * implications; this is Grain's answer -- the plaintext never leaves the
- * browser and the key is re-derivable from the passkey on any device.
- */
-export async function vaultKey(): Promise<CryptoKey> {
-  const prf = await prfOutputFor('vault');
-  try {
-    const base = await crypto.subtle.importKey('raw', prf as BufferSource, 'HKDF', false, ['deriveKey']);
-    return await crypto.subtle.deriveKey(
-      { name: 'HKDF', hash: 'SHA-256', salt: saltFor('vault') as BufferSource,
-        info: new TextEncoder().encode('grain.vault.aesgcm.v1') },
-      base,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['encrypt', 'decrypt'],
-    );
-  } finally {
-    prf.fill(0);
-  }
-}
-
-export async function encryptPrivateFields(fields: Record<string, unknown>): Promise<Hex> {
-  const key = await vaultKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const plaintext = new TextEncoder().encode(JSON.stringify(fields));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext));
-  const out = new Uint8Array(iv.length + ct.length);
-  out.set(iv); out.set(ct, iv.length);
-  return bytesToHex(out);
+  const ring = await unlock(displayName);
+  return { account: ring.identity.account, end: ring.end };
 }
 
 /**
@@ -220,7 +236,7 @@ export function hasDeviceKey(): boolean {
   try { return localStorage.getItem(DEVICE_KEY) !== null; } catch { return false; }
 }
 
-export async function deviceSession(): Promise<Session> {
+export async function deviceKeyring(): Promise<Keyring> {
   let hex: string | null = null;
   try { hex = localStorage.getItem(DEVICE_KEY); } catch { /* private browsing */ }
 
@@ -236,6 +252,10 @@ export async function deviceSession(): Promise<Session> {
     }
   }
 
-  const account = accountFrom(entropy, 0);
-  return { account, end: () => entropy.fill(0) };
+  return keyringFrom(entropy);
+}
+
+export async function deviceSession(): Promise<Session> {
+  const ring = await deviceKeyring();
+  return { account: ring.identity.account, end: ring.end };
 }
