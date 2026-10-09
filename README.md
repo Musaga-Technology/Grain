@@ -4,7 +4,21 @@
 
 **Live:** [grain-on-monad.vercel.app](https://grain-on-monad.vercel.app) · Monad testnet · built for [Metropolis](https://monad.xyz/developers/hackathons/metropolis), Track 04
 
+[![CI](https://github.com/Musaga-Technology/Grain/actions/workflows/ci.yml/badge.svg)](https://github.com/Musaga-Technology/Grain/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/mm-plugin-grain?label=mm-plugin-grain)](https://www.npmjs.com/package/mm-plugin-grain) ![contracts verified](https://img.shields.io/badge/contracts-verified%20on%20Sourcify-1f5f4f)
+
 > **Demo video:** _link goes here_
+
+### Try it in 60 seconds
+
+| | |
+|---|---|
+| **Watch it catch a forgery** | [/verify?sample=forged](https://grain-on-monad.vercel.app/verify?sample=forged): someone's watermark stamped on a different picture, flagged |
+| **Check any image on the web** | paste a link on [/verify](https://grain-on-monad.vercel.app/verify), or right-click it with the [browser extension](https://grain-on-monad.vercel.app/extension) |
+| **Register your own work** | [/register](https://grain-on-monad.vercel.app/register): one passkey prompt, no wallet, up to ten images at once |
+| **One passkey, many keys** | [/me](https://grain-on-monad.vercel.app/me): your identity, pen names and private notes from a single prompt (Mera) |
+| **A creator's earnings** | [/c/grain-studio](https://grain-on-monad.vercel.app/c/grain-studio): licences bought by an AI agent through MetaMask, indexed by Envio |
+| **History nobody can rewrite** | [/sealed](https://grain-on-monad.vercel.app/sealed): the activity log, sealed on Monad, checked in your browser |
+| **As an AI agent** | `mm plugins install mm-plugin-grain`, then `mm grain verify <image>` ([plugin](plugins/mm-grain)) |
 
 ---
 
@@ -176,7 +190,7 @@ JPEG 20 defeats the watermark but not the fingerprint; a 10% crop defeats the fi
 
 | | |
 |---|---|
-| Records on chain | **500+** — 500 from a public photo corpus, labelled `@seed-corpus`; the rest registered through the app |
+| Records on chain | **530+**: 500 from a public photo corpus, labelled `@seed-corpus`; the rest registered through the app |
 | LSH recall, 1,000 records, ≤7 bits flipped | **100%** — the pigeonhole guarantee behind the 8 × 8 band geometry |
 | Verify, end to end in the browser | **~2 s** |
 | First answer on a cold first visit | **5.8 s** — the fingerprint answers while the watermark model downloads |
@@ -204,6 +218,8 @@ Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding
 ---
 
 ## Run it yourself
+
+All five contracts are verified on Sourcify, so their source is readable on the explorer.
 
 | Contract — Monad testnet, chain 10143 | Address |
 |---|---|
