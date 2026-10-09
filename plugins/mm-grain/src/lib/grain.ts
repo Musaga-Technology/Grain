@@ -30,6 +30,8 @@ const chain = defineChain({
 });
 let client: PublicClient | undefined;
 const rpc = () => (client ??= createPublicClient({ chain, transport: http(RPC), batch: { multicall: true } }) as PublicClient);
+/** The Monad testnet client, for callers outside this module (gas and fees for submissions). */
+export const registryClient = () => rpc();
 
 const registryAbi = parseAbi([
   'function records(uint64) view returns ((address creator, uint64 fingerprint, bytes32 manifestHash, uint40 registeredAt, uint64 supersededBy, bool revoked))',

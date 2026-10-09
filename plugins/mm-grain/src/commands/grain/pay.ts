@@ -57,7 +57,7 @@ export default class GrainPay extends PluginCommand<PayResult> {
 
     const executor = await this.ctx.walletExecutor(io, 'grain:pay');
     const result = (await executor(
-      executorRequest(plan.chainId, plan.transaction) as never,
+      (await executorRequest(plan.chainId, plan.transaction)) as never,
       { signal: io.signal } as never,
     )) as { status?: string; hash?: string; failureDescription?: string };
     return { ...plan, sent: true, status: result.status, hash: result.hash, failureReason: result.failureDescription };
