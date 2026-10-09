@@ -3,6 +3,7 @@ import {
 } from '@metamask/agent-wallet/plugin';
 import { planLicence, type LicencePlan } from '../../lib/payment.ts';
 import { who } from '../../lib/format.ts';
+import { executorRequest } from '../../lib/submit.ts';
 
 /**
  * License an image through Grain's LicenseRegistry on Monad testnet.
@@ -50,7 +51,7 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
 
     const executor = await this.ctx.walletExecutor(io, 'grain:license');
     const result = (await executor(
-      { kind: 'transaction', chainId: plan.chainId, transaction: plan.transaction } as never,
+      executorRequest(plan.chainId, plan.transaction) as never,
       { signal: io.signal } as never,
     )) as { status?: string; hash?: string; failureDescription?: string };
     return { ...plan, sent: true, status: result.status, hash: result.hash, failureReason: result.failureDescription };
