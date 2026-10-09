@@ -7,6 +7,8 @@ export interface ResolvedRecord {
   blockNumber?: number;
   supersededBy?: string | null;
   revoked: boolean;
+  /** The ERC-8004 agent the manifest names, and whether the chain confirms the creator controls it. */
+  agent?: { agentId: string; name?: string; verified: boolean };
   /** The signed manifest, when the indexer supplied it; says how the image was made. */
   manifest?: { assertions?: { created?: { digitalSourceType?: string; softwareAgent?: string } } };
 }

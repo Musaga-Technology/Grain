@@ -4,6 +4,7 @@ import { createPublicClient, http, keccak256, parseAbi, parseAbiItem, type Hex }
 import { decodeCbor, verifyManifest, type GrainManifest } from '@grain/core';
 import { CONTRACTS, creatorAbi } from './chain';
 import { licencesFor, recordById } from './indexer';
+import { agentFor, type AgentView } from './agents';
 import deployments from '../../../../deployments/monad-testnet.json';
 
 /**
@@ -76,6 +77,8 @@ export interface RecordView {
   signatureValid?: boolean;
   /** Recorded, but not in Grain's manifest format. */
   manifestUnreadable?: boolean;
+  /** The ERC-8004 agent the manifest names, checked against the chain. */
+  agent?: AgentView;
   /** How the image was made, as declared and signed (C2PA digitalSourceType). */
   created?: { digitalSourceType?: string; softwareAgent?: string };
   /** Where the manifest was found: the indexer, or a log search on chain. */
@@ -144,6 +147,7 @@ async function load(recordId: string): Promise<RecordView | null> {
       view.title = m.assertions?.title;
       view.generator = m.assertions?.generator;
       view.created = m.assertions?.created;
+      view.agent = await agentFor(client as never, 10143, m as never, r.creator).catch(() => undefined);
       view.watermarked = bindings.some((b) => b.alg === 'com.adobe.trustmark.Q');
       view.signatureValid = (await verifyManifest(m as GrainManifest))
         && String(m.creator).toLowerCase() === r.creator.toLowerCase();

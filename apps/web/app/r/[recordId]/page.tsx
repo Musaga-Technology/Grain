@@ -85,7 +85,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
                       style={{ textDecorationColor: 'var(--rule)' }}>@{record.handle}</Link>
               ) : <span className="whitespace-nowrap">an unnamed creator</span>}
             </h1>
-            <MadeWith manifest={{ assertions: { created: record.created } }} />
+            <MadeWith manifest={{ assertions: { created: record.created } }} agent={record.agent} />
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
               registered {relativeTime(record.registeredAt)}
               {record.blockNumber && record.txHash && (

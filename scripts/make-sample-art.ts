@@ -12,7 +12,7 @@
  * forged mark is stamped onto), sea (never registered) and meadow (registered
  * with a licence price, for `mm grain license`).
  *
- *   node --experimental-strip-types scripts/make-sample-art.ts <out.png> <dusk|night|sea|meadow> [seed]
+ *   node --experimental-strip-types scripts/make-sample-art.ts <out.png> <dusk|night|sea|meadow|aurora> [seed]
  */
 import { writeFileSync } from 'node:fs';
 import { encodePNG } from '../packages/grain-core/src/png-encode.ts';
@@ -63,6 +63,17 @@ const SCENES: Record<string, { sky: number[][]; layers: Layer[]; sun: { x: numbe
     ],
     sun: { x: W * 0.22, y: H * 0.16, r: 50, color: [255, 252, 230] },
   },
+  // Green light banded across a dark sky, black peaks below: bright in the
+  // middle third, unlike every other scene. Registered by @grain-studio's
+  // ERC-8004 agent (scripts/register-agent-sample.ts).
+  aurora: {
+    sky: [[4, 10, 24], [20, 120, 90], [90, 230, 160], [10, 30, 50]],
+    layers: [
+      { y: 0.72, amp: 0.16, color: [8, 12, 20], f: ridge(5, 0.009) },
+      { y: 0.84, amp: 0.08, color: [3, 5, 9], f: ridge(6, 0.02) },
+    ],
+    sun: { x: W * 0.85, y: H * 0.12, r: 10, color: [240, 240, 255] },
+  },
   // Bright sky top-left, a dark headland on the right, sea across the bottom.
   sea: {
     sky: [[210, 236, 245], [150, 210, 230], [80, 160, 190], [20, 90, 120]],
@@ -76,7 +87,7 @@ const SCENES: Record<string, { sky: number[][]; layers: Layer[]; sun: { x: numbe
 const sc = SCENES[scene];
 if (!sc) throw new Error(`unknown scene ${scene}`);
 const { sky, layers, sun } = sc;
-const headland = scene === 'sea' ? ridge(5, 0.01) : null;
+const headland = scene === 'sea' || scene === 'aurora' ? ridge(5, 0.01) : null;
 const data = new Uint8Array(W * H * 4);
 for (let y = 0; y < H; y++) {
   const t = y / (H * 0.6);
@@ -87,7 +98,9 @@ for (let y = 0; y < H; y++) {
     const d = Math.hypot(x - sun.x, y - sun.y);
     if (d < sun.r) px = sun.color;
     else if (d < sun.r * 3) px = lerp(sun.color, px, Math.min(1, (d - sun.r) / (sun.r * 2)) ** 0.6);
-    if (headland && x > W * (0.55 + 0.1 * headland(y))) px = lerp([28, 40, 34], [12, 20, 16], y / H);
+    if (headland && scene === 'sea' && x > W * (0.55 + 0.1 * headland(y))) px = lerp([28, 40, 34], [12, 20, 16], y / H);
+    // Aurora: a dark cliff on the left, so its layout mirrors no other scene.
+    if (headland && scene === 'aurora' && x < W * (0.32 + 0.12 * headland(y))) px = lerp([6, 9, 14], [2, 3, 6], y / H);
     for (const L of layers) {
       const top = H * (L.y - L.amp * L.f(x));
       if (y > top) px = lerp(L.color, [L.color[0] * 0.6, L.color[1] * 0.6, L.color[2] * 0.6], Math.min(1, (y - top) / 220));

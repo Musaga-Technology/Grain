@@ -43,6 +43,21 @@ export interface CreatedAssertion {
 export const isAiGenerated = (m: { assertions?: { created?: CreatedAssertion } }) =>
   m.assertions?.created?.digitalSourceType === DIGITAL_SOURCE.aiGenerated;
 
+/**
+ * The AI agent that generated the asset, by its ERC-8004 identity: the
+ * registry as a CAIP-10 account (eip155:<chain>:<address>) and the agent's id
+ * there. A claim, not a proof on its own: readers check on chain that the
+ * manifest's signer owns the agent or is its registered wallet.
+ */
+export interface AgentAssertion {
+  registry: string;
+  agentId: string;
+}
+
+/** ERC-8004's IdentityRegistry on every testnet, Monad testnet included (CREATE2). */
+export const ERC8004_IDENTITY_TESTNET = '0x8004A818BFB912233c491871b3d84c89A494BD9e';
+export const ERC8004_REPUTATION_TESTNET = '0x8004B663056A597Dffe9eCcC1965A193B7388713';
+
 export interface SoftBinding {
   alg: typeof TRUSTMARK_ALG | typeof GRAIN_PHASH_ALG;
   algId: number;
@@ -60,6 +75,7 @@ export interface GrainManifest {
     generator?: string;
     license?: { priceWei: bigint; terms: string };
     created?: CreatedAssertion;
+    agent?: AgentAssertion;
   };
   private?: Hex;
   signature?: Hex;
@@ -76,6 +92,7 @@ export interface BuildManifestInput {
   generator?: string;
   license?: { priceWei: bigint; terms: string };
   created?: CreatedAssertion;
+  agent?: AgentAssertion;
   private?: Hex;
 }
 
@@ -113,6 +130,7 @@ export function buildManifest(input: BuildManifestInput): GrainManifest {
       generator: input.generator,
       license: input.license,
       created: input.created,
+      agent: input.agent,
     },
     private: input.private,
   };
@@ -169,9 +187,15 @@ export async function signManifest(m: GrainManifest, privateKey: Hex): Promise<G
  */
 export async function verifyManifest(m: GrainManifest): Promise<boolean> {
   if (!m.signature) return false;
-  const recovered = await recoverMessageAddress({
-    message: { raw: manifestHash(m) },
-    signature: m.signature,
-  });
-  return recovered.toLowerCase() === m.creator.toLowerCase();
+  const hash = manifestHash(m);
+  // Two forms of the same commitment. Passkey and key-in-hand signers sign the
+  // 32-byte hash itself; wallets that only sign text (MetaMask's agent wallet)
+  // sign the hash written as 0x-prefixed hex. Both bind exactly this hash.
+  for (const message of [{ raw: hash }, hash] as const) {
+    try {
+      const recovered = await recoverMessageAddress({ message, signature: m.signature });
+      if (recovered.toLowerCase() === m.creator.toLowerCase()) return true;
+    } catch { /* malformed signature: try the other form, then fail */ }
+  }
+  return false;
 }

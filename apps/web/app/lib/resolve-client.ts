@@ -9,6 +9,7 @@ import {
 import { CONTRACTS, monadTestnet } from './chain';
 import { decodeWatermark, decoderReady } from './trustmark';
 import { handleOf } from './creators';
+import { agentFor, type AgentView } from './agents';
 import { candidatesByBands, recordById, type IndexedRecord } from './indexer';
 
 /**
@@ -214,6 +215,9 @@ async function attachHandles(r: Resolution): Promise<void> {
       const indexed = await recordById(rec.recordId.toString()).catch(() => null);
       rec.manifest = decodeManifest(indexed?.manifest);
     }
+    // An AI agent named in the manifest, checked against ERC-8004 on chain.
+    (rec as ResolvedRecord & { agent?: AgentView }).agent =
+      await agentFor(chain() as never, monadTestnet.id, rec.manifest as never, rec.creator).catch(() => undefined);
   }));
 }
 

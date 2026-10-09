@@ -139,3 +139,21 @@ test('generated media is declared in C2PA terms, and the declaration is signed',
   assert.equal(await verifyManifest(relabelled), false);
   assert.equal(isAiGenerated(buildManifest({ recordId: 8n, creator, fingerprint: 1n })), false);
 });
+
+test('an agent can sign the manifest hash as text, and the agent link is covered', async () => {
+  const { manifestHash, verifyManifest, DIGITAL_SOURCE, ERC8004_IDENTITY_TESTNET } = await import('../src/index.ts');
+  const { privateKeyToAccount } = await import('viem/accounts');
+  const agentWallet = privateKeyToAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba');
+  const m = buildManifest({ recordId: 9n, creator: agentWallet.address, fingerprint: 0xabcn,
+    created: { digitalSourceType: DIGITAL_SOURCE.aiGenerated, softwareAgent: 'Studio Agent' },
+    agent: { registry: `eip155:10143:${ERC8004_IDENTITY_TESTNET}`, agentId: '42' } });
+  // A text-only wallet signs the hash as a string, the way MetaMask's agent wallet signs.
+  const signed = { ...m, signature: await agentWallet.signMessage({ message: manifestHash(m) }) };
+  assert.equal(await verifyManifest(signed), true);
+  // Pointing the record at a different agent breaks the signature.
+  const moved = { ...signed, assertions: { ...signed.assertions, agent: { registry: signed.assertions.agent!.registry, agentId: '43' } } };
+  assert.equal(await verifyManifest(moved), false);
+  // A text signature over some other string doesn't pass.
+  const wrong = { ...m, signature: await agentWallet.signMessage({ message: 'not the hash' }) };
+  assert.equal(await verifyManifest(wrong), false);
+});
