@@ -21,7 +21,14 @@ import { REGISTRY_CHAIN_ID, registryClient } from './grain.ts';
 /** Measured on testnet: license() 118,271, a plain transfer 21,000. Used if estimation fails. */
 const FALLBACK_GAS = { call: 150_000n, transfer: 21_000n };
 
-export async function executorRequest(chainId: number, tx: { to: `0x${string}`; value: `0x${string}`; data: `0x${string}` }) {
+/**
+ * What the transaction is for, in words. MetaMask shows this summary in the
+ * approval it sends the wallet's owner; without it the email reads "Unknown
+ * transaction". Same shape as mm's own intents: { action, summary }.
+ */
+export type Intent = { action: 'transfer' | 'custom'; summary: string };
+
+export async function executorRequest(chainId: number, tx: { to: `0x${string}`; value: `0x${string}`; data: `0x${string}` }, intent?: Intent) {
   const hasData = Boolean(tx.data && tx.data !== '0x');
   const transaction: Record<string, unknown> = {
     to: tx.to,
@@ -50,7 +57,7 @@ export async function executorRequest(chainId: number, tx: { to: `0x${string}`; 
     transaction.maxFeePerGas = base * 2n + tip; // headroom for a base fee rise before inclusion
   }
 
-  return { kind: 'transaction', chainId, transaction };
+  return { kind: 'transaction', chainId, transaction, ...(intent ? { intent } : {}) };
 }
 
 /**
