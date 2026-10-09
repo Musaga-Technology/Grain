@@ -96,18 +96,47 @@ export async function POST(req: Request) {
   const account = privateKeyToAccount(`0x${key.replace(/^0x/, '')}` as Hex);
   const wallet = createWalletClient({ account, transport });
 
-  const hash = await wallet.sendTransaction({
-    to: address,
-    // Top up to the grant rather than adding it: a part-funded account gets
-    // only what it is missing.
-    value: grant - balance,
-    chain: null,
+  // MONAD'S RESERVE BALANCE: a value transfer may not take the sender below its
+  // 10 MON reserve unless it is the sender's only transaction in the last three
+  // blocks (docs.monad.xyz/developer-essentials/reserve-balance). This faucet
+  // holds less than that, so every grant relies on that exception: two grants
+  // close together and the second reverts. So grants go one at a time, three
+  // blocks apart, and one that reverts is retried. In-memory, so it covers one
+  // serverless instance; the retry covers the rest. See docs/PARALLEL.md.
+  const result = await queueGrant(async () => {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const hash = await wallet.sendTransaction({
+        to: address,
+        // Top up to the grant rather than adding it: a part-funded account
+        // gets only what it is missing.
+        value: grant - balance,
+        chain: null,
+      });
+      const receipt = await pub.waitForTransactionReceipt({ hash });
+      await afterBlocks(pub, receipt.blockNumber, 4);
+      if (receipt.status === 'success') return hash;
+    }
+    return null;
   });
-  await pub.waitForTransactionReceipt({ hash });
+  if (!result) return Response.json({ funded: false, reason: 'grant reverted' }, { status: 503 });
+  const hash = result;
   // Monad validates new transactions against state a few blocks behind the
   // tip, so a balance can be confirmed here yet still look empty to the
-  // account's first transaction. Give it a moment before saying "go".
-  await new Promise((r) => setTimeout(r, 2000));
+  // account's first transaction. The three-block wait above covers that too.
 
   return Response.json({ funded: true, hash });
+}
+
+let grantQueue: Promise<unknown> = Promise.resolve();
+/** One grant at a time from this instance. */
+function queueGrant<T>(fn: () => Promise<T>): Promise<T> {
+  const run = grantQueue.then(fn, fn);
+  grantQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function afterBlocks(pub: { getBlockNumber: () => Promise<bigint> }, from: bigint, n: number) {
+  for (let i = 0; i < 40 && (await pub.getBlockNumber()) < from + BigInt(n); i++) {
+    await new Promise((r) => setTimeout(r, 200));
+  }
 }

@@ -66,6 +66,7 @@ flowchart LR
 2. **One record per image is only viable where writes are cheap.** Each registration stores a record and eight index entries: **~93k gas** once the index is warm. Manifests live in event data rather than storage, so a 16 KB manifest costs only 2.7× a 256 B one.
 3. **Fast enough to disappear into a product.** Measured on Monad testnet: blocks about every **0.3 s**, and a median **0.53 s** from sending a transaction to its confirmed receipt. The registration screen shows the real figure every time ("Confirmed on Monad in 0.6 s"). Watermarking on the device is the slow part, not the chain.
 4. **Nobody can retract your provenance,** and block order settles who registered first.
+5. **Built for parallel execution, and measured.** We burst-tested registration on Monad testnet: under v1's shared id counter, 20 simultaneous creators land **1 per round**; [GrainRegistryV2](packages/contracts/src/v2/GrainRegistryV2.sol), which gives each creator its own id range, lands **all 20 in two blocks**. The live app survives collisions today, and v2 is the migration. Method and results in [docs/PARALLEL.md](docs/PARALLEL.md).
 
 Identity is built entirely on **Mera**, Monad's passkey account layer: no seed phrase, no browser extension, no custody backend. **One passkey, one prompt, many keys.** A single passkey assertion returns one PRF output, and everything is derived from it in the browser, then wiped:
 
@@ -236,8 +237,8 @@ pnpm install
 ./scripts/fetch-web-models.sh        # TrustMark models + WASM runtime, served by the app
 pnpm --filter @grain/web dev
 
-node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 45 tests
-cd packages/contracts && forge test                                          # 38 tests
+node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 46 tests
+cd packages/contracts && forge test                                          # 46 tests
 ```
 
 Registering needs a passkey that supports the WebAuthn PRF extension — Safari with iCloud Keychain, Chrome with Google Password Manager, Android, or 1Password. Without one, Grain offers to keep a key in the browser instead, and says what that gives up before you choose it.
@@ -247,6 +248,7 @@ Registering needs a passkey that supports the WebAuthn PRF extension — Safari 
 | [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md) | the robustness matrix and thresholds |
 | [docs/GAS.md](docs/GAS.md) | gas, and the LSH scaling ceiling |
 | [docs/INDEXER.md](docs/INDEXER.md) | the Envio indexer |
+| [docs/PARALLEL.md](docs/PARALLEL.md) | registration under Monad's parallel execution, burst-tested |
 | [packages/grain-core](packages/grain-core) | fingerprint, manifest, resolution — isomorphic TypeScript |
 | [packages/contracts](packages/contracts) | the five contracts |
 | [apps/web](apps/web) | the app, including the browser TrustMark port |
