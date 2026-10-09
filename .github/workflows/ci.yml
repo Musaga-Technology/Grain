@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: grain-core tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: node --experimental-strip-types --test packages/grain-core/test/*.test.ts
+
+  contracts:
+    name: contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vv
+        working-directory: packages/contracts
+
+  web:
+    name: web app typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @grain/web exec tsc --noEmit
+
+  plugin:
+    name: MetaMask plugin build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      # The plugin bundles grain-core from the workspace, so the workspace
+      # dependencies (fflate, jpeg-js) must be installed too.
+      - run: pnpm install --frozen-lockfile
+      - run: npm ci
+        working-directory: plugins/mm-grain
+      - run: npm run typecheck
+        working-directory: plugins/mm-grain
+      # Also fails if package.json#mm.commands and the built commands disagree.
+      - run: npm run build
+        working-directory: plugins/mm-grain
