@@ -17,8 +17,8 @@ import { LiveRegistry } from './components/LiveRegistry';
 
 const STEPS = [
   {
-    title: 'Register your image',
-    body: 'One biometric prompt. An invisible watermark goes into the file and a fingerprint of it goes on chain. No wallet, no seed phrase.',
+    title: 'Register it before you post',
+    body: 'One biometric prompt. An invisible watermark goes into the file and a fingerprint of it goes on chain, timestamped before anyone can copy it. No wallet, no seed phrase.',
     illustration: '/illustrations/creating.svg',
   },
   {

@@ -338,6 +338,12 @@ export default function Register() {
               <p className="mt-3 text-base" style={{ color: 'var(--ink-muted)' }}>
                 One prompt. No wallet, no seed phrase, no account to create.
               </p>
+              <p className="mt-4 mx-auto max-w-md rounded-lg px-4 py-3 text-sm leading-relaxed text-left"
+                 style={{ background: 'var(--brand-soft)', color: 'var(--ink-muted)' }}>
+                <strong style={{ color: 'var(--ink)' }}>Register before you post.</strong> If two people register the same
+                picture, Grain credits the earlier one: the chain&rsquo;s timestamp is the referee. Register first, and a
+                copier can never get there before you.
+              </p>
               <button
                 onClick={() => fileInput.current?.click()}
                 className="grain-card mt-9 w-full rounded-xl px-6 py-12 flex flex-col items-center gap-5"
