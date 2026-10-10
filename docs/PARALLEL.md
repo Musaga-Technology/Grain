@@ -61,11 +61,24 @@ The fingerprint index is unchanged. Its eight bucket appends conflict only when
 two images share a band value, and a conflict there costs a re-execution, never
 a refusal.
 
-**Not live yet, deliberately.** Every image registered so far carries a v1 record
-id in its watermark, and the record pages, indexer and samples are keyed to the
-v1 contract. Moving means deploying v2 alongside v1, pointing new registrations
-at it, keeping v1 readable for existing marks, and indexing both in Envio. That
-is a migration to do after the hackathon, not three days before it.
+**Built and burst-tested; the live registry moves to it after the hackathon.**
+v1 handles collisions today: the register page retries with the next id
+automatically, so no creator sees a failure, only a few seconds' delay, and only
+when two creators register within the same half-second. Moving the live
+registry is a migration, not a swap, and doing it days before the deadline would
+put registration itself at risk:
+
+- **Every existing watermark points into v1.** A mark carries a record id, not
+  which registry issued it, so v2 must start its ids above v1's (say at
+  1,000,000) and every reader must know where v1 ends.
+- **The other contracts are bound to v1.** `FingerprintIndex` accepts inserts
+  from one registry only, and `LicenseRegistry` holds v1's address immutably,
+  so v2 brings its own index and licence registry, and lookups search both
+  indexes.
+- **Every reader changes:** the website, the MetaMask plugin, the verify API
+  and the Envio indexer, plus a one-time `reserve()` step for each new creator.
+
+That is the first post-hackathon milestone.
 
 ## Two Monad behaviours this surfaced
 
