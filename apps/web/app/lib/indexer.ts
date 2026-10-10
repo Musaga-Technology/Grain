@@ -193,3 +193,14 @@ export async function registryStats(): Promise<{ records: number; creators: numb
   if (!data) return null;
   return { records: Number(data.Record[0]?.recordId ?? 0), creators: data.Creator.length };
 }
+
+/**
+ * Each seal's transaction and time, by seal index. Only the indexer can answer
+ * this cheaply: the contract stores the root, not the transaction that wrote it.
+ * Listing only -- /sealed checks the log against the roots it reads from the chain.
+ */
+export async function sealTransactions(): Promise<Map<number, { txHash: string; sealedAt: number; root: string }> | null> {
+  const data = await query<{ Seal: { index: number; txHash: string; sealedAt: number; root: string }[] }>(
+    `{ Seal(order_by: { index: desc }, limit: 100) { index txHash sealedAt root } }`);
+  return data ? new Map(data.Seal.map((s) => [s.index, s])) : null;
+}

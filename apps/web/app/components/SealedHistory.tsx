@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPublicClient, http, type Hex } from 'viem';
 import { anchorAbi, CONTRACTS, monadTestnet } from '../lib/chain';
+import { sealTransactions } from '../lib/indexer';
 import { logRoot } from '../lib/seal-format';
 
-interface Seal { index: number; from: number; until: number; events: number; root: Hex }
+interface Seal { index: number; from: number; until: number; events: number; root: Hex; txHash?: string; sealedAt?: number }
 type Check = { state: 'checking' } | { state: 'match'; lines: number } | { state: 'mismatch'; lines: number } | { state: 'error'; message: string };
 
 const SHOW = 30;
@@ -39,7 +40,14 @@ export function SealedHistory() {
         const ids = Array.from({ length: Math.min(SHOW, count) }, (_, i) => count - 1 - i);
         const rows = await Promise.all(ids.map((i) =>
           chain.readContract({ address: CONTRACTS.ActivityAnchor, abi: anchorAbi, functionName: 'seals', args: [BigInt(i)] })));
-        setSeals(rows.map((s, k) => ({ index: ids[k], from: Number(s.from), until: Number(s.until), events: s.events, root: s.root })));
+        // Each seal's transaction comes from Envio; the roots stay the chain's.
+        // A row whose indexed root disagrees with the chain gets no link.
+        const txs = await sealTransactions();
+        setSeals(rows.map((s, k) => {
+          const tx = txs?.get(ids[k]);
+          const ours = tx && tx.root.toLowerCase() === s.root.toLowerCase() ? tx : undefined;
+          return { index: ids[k], from: Number(s.from), until: Number(s.until), events: s.events, root: s.root, txHash: ours?.txHash, sealedAt: ours?.sealedAt };
+        }));
       } catch {
         setFailed(true);
       }
@@ -86,6 +94,12 @@ export function SealedHistory() {
                   <span style={{ color: 'var(--ink-muted)' }}> &middot; {s.events} {s.events === 1 ? 'event' : 'events'}</span>
                 </p>
                 <p className="mt-0.5 font-mono text-[11px] truncate" style={{ color: 'var(--ink-faint)' }}>{s.root}</p>
+                {s.txHash && (
+                  <p className="mt-0.5 text-[12px]" style={{ color: 'var(--ink-muted)' }}>
+                    Sealed {when(s.sealedAt!)} &middot;{' '}
+                    <a href={`https://testnet.monadscan.com/tx/${s.txHash}`} target="_blank" rel="noreferrer" className="underline">see the transaction</a>
+                  </p>
+                )}
               </div>
               <div className="shrink-0 text-sm">
                 {!c && <button onClick={() => void run(s)} className="rounded-full border px-3 py-1" style={{ borderColor: 'var(--rule)' }}>Check</button>}
