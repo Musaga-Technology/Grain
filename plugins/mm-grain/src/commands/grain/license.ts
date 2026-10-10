@@ -104,7 +104,7 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
           abi: reputationAbi, functionName: 'giveFeedback',
           args: [BigInt(agent.agentId), BigInt(score), 0, 'grain-licence', 'image', `https://grain-on-monad.vercel.app/r/${recordId}`, '', zeroHash],
         }),
-      }, { action: 'custom', summary: `Rate ERC-8004 agent #${agent.agentId}${agent.name ? ` "${agent.name}"` : ''} ${score}/5 for Grain record #${recordId}` })) as never,
+      }, { action: 'custom', summary: `Rate ERC-8004 agent #${agent.agentId}${agent.name ? ` "${agent.name}"` : ''} ${score}/5 for Grain record #${recordId}` }, me)) as never,
       { signal: io.signal } as never,
     )) as { hash?: string; failureDescription?: string };
     return r.hash ? { ...base, score, hash: r.hash } : { ...base, skipped: r.failureDescription ?? 'the rating was not sent' };

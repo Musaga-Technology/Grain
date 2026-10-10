@@ -28,7 +28,12 @@ const FALLBACK_GAS = { call: 150_000n, transfer: 21_000n };
  */
 export type Intent = { action: 'transfer' | 'custom'; summary: string };
 
-export async function executorRequest(chainId: number, tx: { to: `0x${string}`; value: `0x${string}`; data: `0x${string}` }, intent?: Intent) {
+/**
+ * `from` is the wallet's own address when the command knows it. Estimate from
+ * it whenever possible: a call that mints to msg.sender (ERC-8004's register)
+ * reverts from the zero address, and the fallback limit is far too low for it.
+ */
+export async function executorRequest(chainId: number, tx: { to: `0x${string}`; value: `0x${string}`; data: `0x${string}` }, intent?: Intent, from?: `0x${string}` | null) {
   const hasData = Boolean(tx.data && tx.data !== '0x');
   const transaction: Record<string, unknown> = {
     to: tx.to,
@@ -41,11 +46,12 @@ export async function executorRequest(chainId: number, tx: { to: `0x${string}`; 
     const [block, tip] = await Promise.all([rpc.getBlock(), rpc.estimateMaxPriorityFeePerGas()]);
     let gas: bigint;
     try {
-      // Estimated from an account given enough balance by a state override,
-      // since the sender's own address isn't available to a plugin command.
+      // Estimated from the sender (or the zero address when it isn't known),
+      // given enough balance by a state override.
+      const account = from ?? zeroAddress;
       const estimate = await rpc.estimateGas({
-        account: zeroAddress, to: tx.to, value: BigInt(tx.value), ...(hasData ? { data: tx.data } : {}),
-        stateOverride: [{ address: zeroAddress, balance: parseEther('1000000') }],
+        account, to: tx.to, value: BigInt(tx.value), ...(hasData ? { data: tx.data } : {}),
+        stateOverride: [{ address: account, balance: parseEther('1000000') }],
       });
       gas = hasData ? (estimate * 125n) / 100n : estimate;
     } catch {

@@ -41,13 +41,14 @@ export default class GrainAgent extends PluginCommand<AgentResult> {
     if (ensureMonadTestnetRpc(this.ctx.walletStateManager as never)) {
       io.progress("Pointed MetaMask at Monad testnet's own RPC (its default proxy rejects chain 10143)");
     }
+    const owner = selectedAddress(this.ctx.walletStateManager.read() as never);
     const executor = await this.ctx.walletExecutor(io, 'grain:agent');
     const result = (await executor(
       (await executorRequest(10143, {
         to: ERC8004_IDENTITY_TESTNET,
         value: '0x0',
         data: encodeFunctionData({ abi: identityAbi, functionName: 'register', args: [uri] }),
-      }, { action: 'custom', summary: `Create the ERC-8004 agent identity "${agentName}" on Monad testnet` })) as never,
+      }, { action: 'custom', summary: `Create the ERC-8004 agent identity "${agentName}" on Monad testnet` }, owner)) as never,
       { signal: io.signal } as never,
     )) as { status?: string; hash?: `0x${string}`; failureDescription?: string };
 
@@ -55,12 +56,13 @@ export default class GrainAgent extends PluginCommand<AgentResult> {
     if (result.hash) {
       io.progress('Waiting for the agent id');
       const receipt = await registryClient().waitForTransactionReceipt({ hash: result.hash });
+      if (receipt.status !== 'success') return { agentId: null, name: agentName, owner, hash: result.hash, failureReason: 'the transaction reverted' };
       const [registered] = parseEventLogs({ abi: identityAbi, logs: receipt.logs, eventName: 'Registered' });
       agentId = registered?.args.agentId?.toString() ?? null;
       io.progress();
     }
     return {
-      agentId, name: agentName, owner: selectedAddress(this.ctx.walletStateManager.read() as never),
+      agentId, name: agentName, owner,
       hash: result.hash, status: result.status, failureReason: result.failureDescription,
     };
   }
