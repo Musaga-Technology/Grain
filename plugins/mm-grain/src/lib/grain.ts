@@ -16,7 +16,7 @@ import deployments from '../../../../deployments/monad-testnet.json' with { type
 
 export const SITE = process.env.GRAIN_SITE ?? 'https://grain-on-monad.vercel.app';
 const RPC = process.env.GRAIN_RPC_URL ?? 'https://testnet-rpc.monad.xyz';
-const INDEXER = process.env.GRAIN_INDEXER_URL ?? 'https://indexer.dev.hyperindex.xyz/99250c3/v1/graphql';
+const INDEXER = process.env.GRAIN_INDEXER_URL ?? 'https://indexer.dev.hyperindex.xyz/9ffa191/v1/graphql';
 
 export const REGISTRY_CHAIN_ID = deployments.chainId;
 const C = deployments.contracts as Record<'GrainRegistry' | 'FingerprintIndex' | 'CreatorRegistry' | 'LicenseRegistry', `0x${string}`>;
