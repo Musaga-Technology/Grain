@@ -42,7 +42,10 @@ const inputs = {
 } satisfies InputSchema;
 
 type Rating = { agentId: string; agentName?: string; score?: number; hash?: string; skipped?: string };
-type LicenceResult = LicencePlan & { sent: boolean; status?: string; hash?: string; failureReason?: string; rating?: Rating };
+/** What the licence grants. Fixed for v1; see the page. */
+const TERMS = { name: 'Grain Licence v1', url: 'https://grain-on-monad.vercel.app/licence' };
+
+type LicenceResult = LicencePlan & { terms: typeof TERMS } & { sent: boolean; status?: string; hash?: string; failureReason?: string; rating?: Rating };
 
 export default class GrainLicense extends PluginCommand<LicenceResult> {
   static override description =
@@ -63,7 +66,7 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
     const score = rate === undefined || rate === '' ? null : Number(rate);
     if (score !== null && !(Number.isInteger(score) && score >= 1 && score <= 5)) throw new Error('--rate is a whole number from 1 to 5.');
     const plan = await planLicence(String(target), maxPrice ? String(maxPrice) : undefined, (l) => io.progress(l));
-    if (dryRun) return { ...plan, sent: false };
+    if (dryRun) return { ...plan, terms: TERMS, sent: false };
 
     if (plan.chainId === MONAD_TESTNET && ensureMonadTestnetRpc(this.ctx.walletStateManager as never)) {
       io.progress('Pointed MetaMask at Monad testnet\'s own RPC (its default proxy rejects chain 10143)');
@@ -72,11 +75,11 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
     const result = (await executor(
       (await executorRequest(plan.chainId, plan.transaction, {
         action: 'custom',
-        summary: `License Grain record #${plan.recordId} from ${plan.creatorHandle ? `@${plan.creatorHandle}` : plan.creator} for ${plan.price} MON, paid in full to the creator`,
+        summary: `License Grain record #${plan.recordId} from ${plan.creatorHandle ? `@${plan.creatorHandle}` : plan.creator} for ${plan.price} MON under the ${TERMS.name}, paid in full to the creator`,
       })) as never,
       { signal: io.signal } as never,
     )) as { status?: string; hash?: `0x${string}`; failureDescription?: string };
-    const licensed = { ...plan, sent: true, status: result.status, hash: result.hash, failureReason: result.failureDescription };
+    const licensed = { ...plan, terms: TERMS, sent: true, status: result.status, hash: result.hash, failureReason: result.failureDescription };
     if (score === null || !result.hash || plan.chainId !== MONAD_TESTNET) return licensed;
 
     // Rate only once the licence is final, and only an agent whose identity checks out.
@@ -112,12 +115,12 @@ export default class GrainLicense extends PluginCommand<LicenceResult> {
 
   override successHint(r: LicenceResult): string {
     const to = who({ creatorHandle: r.creatorHandle ?? undefined, creator: r.creator });
-    if (!r.sent) return `Licensing record ${r.recordId} costs ${r.price} MON, paid in full to ${to}. Nothing was sent.`;
+    if (!r.sent) return `Licensing record ${r.recordId} costs ${r.price} MON under the ${r.terms.name} (${r.terms.url}), paid in full to ${to}. Nothing was sent.`;
     if (r.failureReason) return `The licence did not go through: ${r.failureReason}`;
     const agent = r.rating && `ERC-8004 agent #${r.rating.agentId}${r.rating.agentName ? ` "${r.rating.agentName}"` : ''}`;
     const rating = !r.rating ? '' : r.rating.hash
       ? `\nRated ${agent} ${r.rating.score}/5: https://testnet.monadscan.com/tx/${r.rating.hash}`
       : `\nDid not rate ${agent}: ${r.rating.skipped}`;
-    return `Licensed record ${r.recordId} from ${to} for ${r.price} MON.${r.hash ? `\nTransaction: ${r.chainId === 10143 ? `https://testnet.monadscan.com/tx/${r.hash}` : r.hash}` : ''}\n${r.recordUrl}${rating}`;
+    return `Licensed record ${r.recordId} from ${to} for ${r.price} MON under the ${r.terms.name}: ${r.terms.url}${r.hash ? `\nTransaction: ${r.chainId === 10143 ? `https://testnet.monadscan.com/tx/${r.hash}` : r.hash}` : ''}\n${r.recordUrl}${rating}`;
   }
 }

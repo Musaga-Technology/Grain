@@ -30,6 +30,7 @@ export function Footer() {
         <p>
           <Link href="/extension" className="hover:underline underline-offset-4">Browser extension</Link> &middot;{' '}
           <Link href="/sealed" className="hover:underline underline-offset-4">Sealed history</Link> &middot;{' '}
+          <Link href="/licence" className="hover:underline underline-offset-4">Licence</Link> &middot;{' '}
           C2PA-compatible &middot;{' '}
           <a href="https://github.com/Musaga-Technology/Grain" className="hover:underline underline-offset-4">
             Source

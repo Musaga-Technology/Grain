@@ -188,7 +188,8 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
             {licensing && licensing.priceWei > 0n && (
               <div className="mt-12 rounded-lg border px-5 py-4" style={{ borderColor: 'var(--rule)' }}>
                 <p className="text-[15px]">
-                  Licensable for <strong>{formatEther(licensing.priceWei)} MON</strong>, paid in full to the creator
+                  Licensable for <strong>{formatEther(licensing.priceWei)} MON</strong> under the{' '}
+                  <Link href="/licence" className="underline underline-offset-4">Grain Licence v1</Link>, paid in full to the creator
                   {licensing.licences ? <> &middot; {licensing.licences} {licensing.licences === 1 ? 'licence' : 'licences'} so far</> : null}
                 </p>
                 <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>

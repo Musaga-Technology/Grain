@@ -117,7 +117,7 @@ function Earnings({ creator }: { creator: CreatorPage }) {
       </dl>
       <p className="mt-4 text-sm" style={{ color: 'var(--ink-muted)' }}>
         {price > 0n
-          ? <>Licensable at <strong style={{ color: 'var(--ink)' }}>{mon(price)} MON</strong> per image, paid in full to @{creator.handle}. AI agents license with <code className="font-mono text-[13px] whitespace-nowrap">mm grain license</code>.</>
+          ? <>Licensable at <strong style={{ color: 'var(--ink)' }}>{mon(price)} MON</strong> per image under the <a href="/licence" className="underline underline-offset-4">Grain Licence v1</a>, paid in full to @{creator.handle}. AI agents license with <code className="font-mono text-[13px] whitespace-nowrap">mm grain license</code>.</>
           : <>Not licensable yet. A licence price can be set when registering an image.</>}
       </p>
 

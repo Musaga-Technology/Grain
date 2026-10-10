@@ -514,8 +514,9 @@ export default function Register() {
                     style={{ borderColor: price && licencePriceWei(price) === null ? 'var(--accent)' : 'var(--rule)' }}
                   />
                   <span className="mt-2 block text-sm" style={{ color: 'var(--ink-faint)' }}>
-                    Agents using the MetaMask Agent Wallet can license your images for this amount, paid
-                    straight to you, with no fee. It applies to all your images. Leave it empty to stay unlicensable.
+                    Anyone, including AI agents using the MetaMask Agent Wallet, can license your images for this
+                    amount under the <a href="/licence" target="_blank" className="underline underline-offset-4">Grain Licence v1</a>,
+                    paid straight to you, with no fee. It applies to all your images. Leave it empty to stay unlicensable.
                   </span>
                 </label>
               </details>
