@@ -8,7 +8,35 @@
 
 > **Demo video:** _link goes here_
 
-### Try it in 60 seconds
+## For judges
+
+| | Where it is | See it live |
+|---|---|---|
+| **Track 04: Trust, Identity & AI** | an open C2PA manifest repository on Monad: [how it works](#how-it-works), [AI-generated and by whom](#how-it-works) (ERC-8004), [measured](#measured-not-asserted) | [catch a forgery](https://grain-on-monad.vercel.app/verify?sample=forged) |
+| **Monad** | [Why Monad](#why-monad): on-chain search and proof, ~93k gas per image, 0.53 s to confirm, parallel execution [burst-tested](docs/PARALLEL.md) | [record 535](https://grain-on-monad.vercel.app/r/535) |
+| **MetaMask Agent Wallet** | [the plugin](#for-agents-the-metamask-agent-wallet-plugin): verify, license, pay, and agents registering their own work under ERC-8004; [two MetaMask bugs we traced](#things-we-found-and-fixed-or-stated) | [npm](https://www.npmjs.com/package/mm-plugin-grain), [a licence approved by email](https://testnet.monadscan.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17) |
+| **Mera: One Passkey, Many Keys** | [Accounts on Mera](#accounts-on-mera-one-passkey-many-keys): one prompt gives an identity, unlinkable pen names and a private-notes key | [/me](https://grain-on-monad.vercel.app/me), [/register](https://grain-on-monad.vercel.app/register) |
+| **Envio** | [How Envio powers Grain](#how-envio-powers-grain): every read, 90 ms vs 980 ms, every answer checked against the chain | [/c/grain-studio](https://grain-on-monad.vercel.app/c/grain-studio), [/sealed](https://grain-on-monad.vercel.app/sealed) |
+
+## Contents
+
+- [Try it in 60 seconds](#try-it-in-60-seconds)
+- [The gap](#the-gap)
+- [How it works](#how-it-works)
+- [Why Monad](#why-monad)
+- [Accounts on Mera: one passkey, many keys](#accounts-on-mera-one-passkey-many-keys)
+- [How Envio powers Grain](#how-envio-powers-grain)
+- [For agents: one HTTP call](#for-agents-one-http-call)
+- [For agents: the MetaMask Agent Wallet plugin](#for-agents-the-metamask-agent-wallet-plugin)
+- [Why creators come back](#why-creators-come-back)
+- [Measured, not asserted](#measured-not-asserted)
+- [Things we found, and fixed or stated](#things-we-found-and-fixed-or-stated)
+- [Honest about conformance](#honest-about-conformance)
+- [Run it yourself](#run-it-yourself)
+- [Credits](#credits)
+
+
+## Try it in 60 seconds
 
 | | |
 |---|---|
@@ -70,6 +98,10 @@ flowchart LR
 3. **Fast enough to disappear into a product.** Measured on Monad testnet: blocks about every **0.3 s**, and a median **0.53 s** from sending a transaction to its confirmed receipt. The registration screen shows the real figure every time ("Confirmed on Monad in 0.6 s"). Watermarking on the device is the slow part, not the chain.
 4. **Nobody can retract your provenance,** and block order settles who registered first.
 5. **Built for parallel execution, and measured.** We burst-tested registration on Monad testnet: under v1's shared id counter, 20 simultaneous creators land **1 per round**; [GrainRegistryV2](packages/contracts/src/v2/GrainRegistryV2.sol), which gives each creator its own id range, lands **all 20 in two blocks**. The live app survives collisions today, and v2 is the migration. Method and results in [docs/PARALLEL.md](docs/PARALLEL.md).
+
+---
+
+## Accounts on Mera: one passkey, many keys
 
 Identity is built entirely on **Mera**, Monad's passkey account layer: no seed phrase, no browser extension, no custody backend. **One passkey, one prompt, many keys.** A single passkey assertion returns one PRF output, and everything is derived from it in the browser, then wiped:
 
