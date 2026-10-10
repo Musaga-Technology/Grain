@@ -182,3 +182,14 @@ export async function loadLicensing(creator: Hex, recordId: string): Promise<{ p
   ]);
   return { priceWei: profile?.licensePriceWei ?? 0n, licences: licences?.length };
 }
+
+/** The verified ERC-8004 agent behind an indexed record, for listings that only have indexer rows. */
+export async function indexedAgent(r: { creator: string; manifest?: string | null }): Promise<AgentView | undefined> {
+  if (!r.manifest) return undefined;
+  try {
+    const m = decodeCbor(new Uint8Array(Buffer.from(r.manifest.slice(2), 'hex'))) as never;
+    return await agentFor(client as never, 10143, m, r.creator);
+  } catch {
+    return undefined;
+  }
+}

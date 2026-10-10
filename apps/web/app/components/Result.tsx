@@ -1,5 +1,6 @@
 'use client';
 
+import { creditName } from '../lib/agents';
 import type { Resolution } from '../lib/types';
 
 /**
@@ -88,7 +89,7 @@ export function Result({ result, onVerifyOnChain, chainDistance }: {
 
   const record = result.state === 'RESOLVED' ? result.record : result.candidates[0];
   const uncertain = result.state === 'UNCERTAIN';
-  const name = creatorName(record?.creatorHandle);
+  const name = record?.creatorHandle ? creatorName(record.creatorHandle) : creditName(undefined, record?.agent);
 
   return (
     <Shell>

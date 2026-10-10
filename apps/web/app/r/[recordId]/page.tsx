@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { creditName } from '../../lib/agents';
 import { formatEther } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
 import { loadLicensing, loadRecord } from '../../lib/record-server';
@@ -23,7 +24,7 @@ const EXPLORER = 'https://testnet.monadscan.com';
 export async function generateMetadata({ params }: { params: Promise<{ recordId: string }> }): Promise<Metadata> {
   const { recordId } = await params;
   const r = await loadRecord(recordId).catch(() => null);
-  const who = r?.handle ? `@${r.handle}` : 'an unnamed creator';
+  const who = creditName(r?.handle, r?.agent);
   const title = r ? `${r.title ? `${r.title} — ` : ''}made by ${who} · Grain` : `Record ${recordId} · Grain`;
   const description = r
     ? `Record ${recordId} on Grain, the open provenance registry. Anyone can check it against the chain.`
@@ -83,7 +84,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
               {record.handle ? (
                 <Link href={`/c/${record.handle}`} className="whitespace-nowrap underline decoration-1 underline-offset-[6px]"
                       style={{ textDecorationColor: 'var(--rule)' }}>@{record.handle}</Link>
-              ) : <span className="whitespace-nowrap">an unnamed creator</span>}
+              ) : <span className="whitespace-nowrap">{creditName(null, record.agent)}</span>}
             </h1>
             <MadeWith manifest={{ assertions: { created: record.created } }} agent={record.agent} />
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>

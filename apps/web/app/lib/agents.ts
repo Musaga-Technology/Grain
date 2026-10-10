@@ -26,3 +26,14 @@ export async function agentFor(
   if (!agent) return { agentId: claim.agentId, verified: false };
   return { agentId: claim.agentId, name: agent.name, owner: agent.owner, verified: controlsAgent(agent, creator) };
 }
+
+/**
+ * Who to credit, by name: the creator's handle, or else -- for an agent's
+ * work -- the name of a verified ERC-8004 agent. An unverified claim never
+ * names anyone: anyone can write an agent id into a manifest.
+ */
+export function creditName(handle: string | null | undefined, agent?: AgentView | null): string {
+  if (handle) return `@${handle}`;
+  if (agent?.verified && agent.name) return agent.name;
+  return 'an unnamed creator';
+}

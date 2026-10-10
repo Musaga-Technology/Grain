@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { recentRecords, registryStats, type IndexedRecord } from '../lib/indexer';
 import { FingerprintGlyph } from './FingerprintGlyph';
+import { creditName } from '../lib/agents';
+import { indexedAgent } from '../lib/record-server';
 
 /**
  * The registry, live, on the landing page -- served by the Envio indexer.
@@ -20,7 +22,7 @@ export function relativeTime(unixSeconds: number): string {
   { const m = Math.floor(s / 86400 / 30); return `${m} month${m === 1 ? '' : 's'} ago`; }
 }
 
-export function RecordRow({ r, showCreator = true }: { r: IndexedRecord; showCreator?: boolean }) {
+export function RecordRow({ r, showCreator = true, agentName }: { r: IndexedRecord; showCreator?: boolean; agentName?: string }) {
   const handle = r.creatorEntity?.handle;
   return (
     <li>
@@ -31,7 +33,7 @@ export function RecordRow({ r, showCreator = true }: { r: IndexedRecord; showCre
           <p className="text-[15px] truncate">
             Record <span className="font-mono text-[13px]">#{r.recordId}</span>
             {showCreator && (
-              <span style={{ color: 'var(--ink-muted)' }}> · {handle ? `@${handle}` : 'unnamed creator'}</span>
+              <span style={{ color: 'var(--ink-muted)' }}> · {handle ? `@${handle}` : agentName ?? 'unnamed creator'}</span>
             )}
           </p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>
@@ -47,6 +49,8 @@ export function RecordRow({ r, showCreator = true }: { r: IndexedRecord; showCre
 export async function LiveRegistry() {
   const [recent, stats] = await Promise.all([recentRecords(6), registryStats()]);
   if (!recent || recent.length === 0) return null;
+  // An agent's work is credited to the agent by name, once its identity checks out.
+  const agents = await Promise.all(recent.map((r) => (r.creatorEntity?.handle ? undefined : indexedAgent(r))));
   return (
     <section className="border-t" style={{ borderColor: 'var(--rule)' }}>
       <div className="mx-auto max-w-5xl px-5 py-16 sm:py-20">
@@ -68,7 +72,10 @@ export async function LiveRegistry() {
           )}
         </div>
         <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-          {recent.map((r) => <RecordRow key={r.recordId} r={r} />)}
+          {recent.map((r, i) => {
+            const name = creditName(null, agents[i]);
+            return <RecordRow key={r.recordId} r={r} agentName={name === 'an unnamed creator' ? undefined : name} />;
+          })}
         </ul>
         <p className="mt-6 text-xs" style={{ color: 'var(--ink-faint)' }}>
           Indexed by Envio. Each square is a record&rsquo;s fingerprint — Grain stores those, never the images.
