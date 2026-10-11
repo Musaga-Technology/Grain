@@ -11,6 +11,8 @@ import {
 import { Header, Footer } from '../components/Chrome';
 import { unlock, deviceKeyring, PasskeyUnavailable, storedCredential, type Keyring, type Session } from '../lib/mera';
 import { penProfileURI } from '../lib/pen-proof';
+import { credentialName, readSourceCredential } from '../lib/c2pa';
+import type { SourceCredentialAssertion } from '@grain/core';
 import { knownPenNames, rememberPenName, findPenSlot } from '../lib/pen-names';
 import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 import { monadTestnet, CONTRACTS, registryAbi, creatorAbi } from '../lib/chain';
@@ -44,6 +46,17 @@ const ACCEPTED = ['image/png', 'image/jpeg'];
 const MAX_BATCH = 10;
 
 interface Item { file: File; preview: string; wideRatio: boolean }
+
+/**
+ * The C2PA credential each chosen image already carries (OpenAI, Adobe, a
+ * camera), read once in the browser and shared by the form and by signing,
+ * so a quick click on Register can't skip it.
+ */
+const credentials = new WeakMap<File, Promise<SourceCredentialAssertion | null>>();
+const credentialOf = (f: File) => {
+  if (!credentials.has(f)) credentials.set(f, readSourceCredential(f).catch(() => null));
+  return credentials.get(f)!;
+};
 type ItemStatus = 'waiting' | 'working' | 'done' | 'failed';
 interface Progress { item: Item; status: ItemStatus; recordId?: string; confirmMs?: number; gasUsed?: bigint; txHash?: string }
 
@@ -74,6 +87,7 @@ export default function Register() {
   // How it was made, declared in C2PA's vocabulary and signed into the manifest.
   const [made, setMade] = useState<'camera' | 'humanMade' | 'aiGenerated'>('camera');
   const [aiTool, setAiTool] = useState('');
+  const [found, setFound] = useState<{ state: 'idle' | 'reading' } | { state: 'done'; creds: SourceCredentialAssertion[] }>({ state: 'idle' });
   // Asked once. A returning creator already has a name on chain, and the app
   // knows which visit this is without asking.
   const [firstVisit, setFirstVisit] = useState(true);
@@ -116,6 +130,12 @@ export default function Register() {
       items.push({ file, preview: URL.createObjectURL(file), wideRatio });
     }
     setPhase({ kind: 'ready', items });
+    setFound({ state: 'reading' });
+    const creds = (await Promise.all(items.map((it) => credentialOf(it.file)))).filter((c): c is SourceCredentialAssertion => Boolean(c));
+    setFound({ state: 'done', creds });
+    // An AI credential answers "How was it made?" for the creator.
+    const ai = creds.find((c) => c.digitalSourceType?.endsWith('/trainedAlgorithmicMedia'));
+    if (ai) { setMade('aiGenerated'); if (ai.tool) setAiTool(ai.tool); }
   }, []);
 
   const register = useCallback(async (items: Item[], useDeviceKey = false) => {
@@ -294,6 +314,8 @@ export default function Register() {
                   digitalSourceType: DIGITAL_SOURCE[made],
                   ...(made === 'aiGenerated' && aiTool.trim() ? { softwareAgent: aiTool.trim().slice(0, 60) } : {}),
                 },
+                // The C2PA credential the original carried, kept after platforms strip it.
+                source: (await credentialOf(p.item.file)) ?? undefined,
               }),
               session.account,
             );
@@ -437,6 +459,23 @@ export default function Register() {
                       : 'This is how you’ll be credited when someone checks your image.'}
                   </span>
                 </label>
+              )}
+
+              {found.state === 'reading' && (
+                <p className="mt-7 grain-pulse text-sm" style={{ color: 'var(--ink-muted)' }}>Looking for Content Credentials (C2PA) in your image&hellip;</p>
+              )}
+              {found.state === 'done' && found.creds.length > 0 && (
+                <div className="mt-7 rounded-lg px-4 py-3 text-[14px] leading-relaxed" style={{ background: 'var(--brand-soft)' }}>
+                  <p className="font-medium">
+                    <span style={{ color: 'var(--brand)' }}>&#10003;</span>{' '}
+                    {found.creds.length === 1 ? 'Content Credentials found' : `Content Credentials found on ${found.creds.length} images`}: signed by{' '}
+                    {[...new Set(found.creds.map(credentialName))].join(', ')}
+                    {found.creds[0].tool ? ` (${found.creds[0].tool})` : ''} &middot; {found.creds.every((c) => c.validation === 'Trusted') ? 'trusted' : found.creds.every((c) => c.validation !== 'Invalid') ? 'valid' : 'not valid'}
+                  </p>
+                  <p className="mt-1" style={{ color: 'var(--ink-muted)' }}>
+                    Platforms strip these from every copy. Grain keeps a record of them, so even a screenshot leads back to the original credential.
+                  </p>
+                </div>
               )}
 
               <fieldset className="mt-7">

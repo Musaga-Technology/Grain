@@ -95,6 +95,7 @@ const handler = createMcpHandler((server) => {
     const lines = [
       `Record ${record_id}${r.title ? `, "${r.title}"` : ''}: made by ${creditName(r.handle, r.agent)} (${r.creator}).`,
       ...(how ? [`How it was made: ${how}.`] : []),
+      ...(r.credential ? [`Original Content Credentials: C2PA, signed by ${r.credential.issuer ?? r.credential.signer}${r.credential.tool ? ` (${r.credential.tool})` : ''}, ${r.credential.validation.toLowerCase()} at registration${r.credential.signedAt ? `, signed ${r.credential.signedAt.slice(0, 10)}` : ''}. Copies lose these; Grain kept the record. Original file sha256 ${r.credential.assetSha256.slice(2)}.`] : []),
       `Registered ${new Date(r.registeredAt * 1000).toISOString()}${r.blockNumber ? ` in Monad block ${r.blockNumber}` : ''}.`,
       `Manifest matches what the contract recorded: ${r.manifestMatchesChain ? 'yes' : 'no'}. Signed by the creator's key: ${r.signatureValid ? 'yes' : 'no'}.`,
       r.revoked ? 'The creator has withdrawn this record.' : r.supersededBy ? `Superseded by record ${r.supersededBy}.` : '',

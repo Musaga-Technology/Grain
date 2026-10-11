@@ -90,6 +90,7 @@ const TEST_ACCOUNTS = [
   '0xa6ff747455c88629dcd8f3f7639d14f53d61f58e', // pen-name proof test, identity
   '0xcd34a8e905df3bcb2c35bd011df0176d17e0eacc', // pen-name proof test, pen name
   '0xcbb83e3857bed28bb2980e881e08b8287a5edd14', // recovery test
+  '0xb1280826b21cf5feabeab84abbbf2c8778812099', // C2PA bridge test, record 552
 ];
 
 const RECORD_FIELDS = `recordId creator fingerprint registeredAt blockNumber txHash manifest revoked supersededBy

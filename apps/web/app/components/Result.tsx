@@ -1,6 +1,8 @@
 'use client';
 
 import { creditName } from '../lib/agents';
+import { credentialName } from '../lib/credential-name';
+import type { SourceCredentialAssertion } from '@grain/core';
 import type { Resolution } from '../lib/types';
 
 /**
@@ -102,6 +104,7 @@ export function Result({ result, onVerifyOnChain, chainDistance }: {
       </h2>
 
       <MadeWith manifest={record?.manifest} agent={record?.agent} />
+      <SourceCredential source={(record?.manifest as { assertions?: { source?: SourceCredentialAssertion } } | undefined)?.assertions?.source} />
 
       {record && (
         <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
@@ -183,6 +186,26 @@ export function MadeWith({ manifest, agent }: {
        style={{ background: ai ? '#f1ecfb' : 'var(--brand-soft)', color: ai ? '#5b3fa0' : 'var(--brand)' }}>
       {ai ? '✦' : '●'} {label}
       <span style={{ color: 'var(--ink-faint)' }}>&middot; declared and signed by the creator</span>
+    </p>
+  );
+}
+
+/**
+ * The C2PA credential the original image carried when it was registered --
+ * OpenAI, Adobe, a camera maker. Every platform strips it from copies; Grain
+ * kept the evidence, so even a screenshot leads back to it.
+ */
+export function SourceCredential({ source }: { source?: SourceCredentialAssertion }) {
+  if (!source) return null;
+  const when = source.signedAt ? new Date(source.signedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const ok = source.validation !== 'Invalid';
+  return (
+    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl px-3 py-1.5 text-sm w-fit"
+       style={ok ? { background: '#eaf1fb', color: '#1f4f8a' } : { background: 'var(--accent-surface)', color: 'var(--accent)' }}>
+      <span>&#9670; Original Content Credentials: signed by <strong>{credentialName(source)}</strong>{source.tool ? ` (${source.tool})` : ''}</span>
+      <span style={{ color: 'var(--ink-faint)' }}>
+        &middot; C2PA {source.validation === 'Trusted' ? 'trusted' : ok ? 'valid' : 'not valid'} at registration{when ? `, signed ${when}` : ''}
+      </span>
     </p>
   );
 }

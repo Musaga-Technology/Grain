@@ -30,7 +30,19 @@ export type VerifyResult = {
   candidatesFrom: Verification['candidatesFrom'];
   /** As declared and signed by the creator, e.g. "AI-generated with ChatGPT". */
   madeWith: string | null;
+  /** The C2PA credential the original carried when registered (e.g. OpenAI's), kept after copies lost it. */
+  originalCredential: Verification['credential'] | null;
 };
+
+/** "OpenAI" from "OpenAI OpCo, LLC", as the website shows it. */
+const orgName = (c: { issuer?: string; signer?: string; tool?: string }) => {
+  let n = c.issuer || c.signer || c.tool || 'an unknown signer';
+  for (let i = 0; i < 3; i++) n = n.replace(/,?\s*(Inc|LLC|Ltd|Limited|Corp|Corporation|OpCo|GmbH|S\.A\.)\.?$/i, '').trim();
+  return n;
+};
+const originalLine = (c?: Verification['credential']) => c
+  ? ` Originally signed by ${orgName(c)}${c.tool ? ` (${c.tool})` : ''} with C2PA Content Credentials, ${c.validation === 'Invalid' ? 'which did not validate' : 'validated'} at registration; this copy no longer carries them.`
+  : '';
 
 export function toResult(v: Verification): VerifyResult {
   const r = v.resolution;
@@ -38,8 +50,9 @@ export function toResult(v: Verification): VerifyResult {
     fingerprint: `0x${v.fingerprint.toString(16).padStart(16, '0')}`,
     watermark: v.watermark, candidatesFrom: v.candidatesFrom, onChainDistance: v.onChainDistance ?? null,
     madeWith: v.madeWith ?? null,
+    originalCredential: v.credential ?? null,
   };
-  const made = v.madeWith ? ` ${v.madeWith[0].toUpperCase()}${v.madeWith.slice(1)}, declared by the creator.` : '';
+  const made = (v.madeWith ? ` ${v.madeWith[0].toUpperCase()}${v.madeWith.slice(1)}, declared by the creator.` : '') + originalLine(v.credential);
   switch (r.state) {
     case 'RESOLVED':
       return { ...base, state: r.state, record: recordJson(r.record), matchedBy: r.via, distance: r.distance,

@@ -28,7 +28,7 @@ export {
   signManifest, signManifestWith, verifyManifest,
   GRAIN_PHASH_ALG, TRUSTMARK_ALG, GRAIN_PHASH_ALG_ID, DIGITAL_SOURCE, isAiGenerated,
   ERC8004_IDENTITY_TESTNET, ERC8004_REPUTATION_TESTNET,
-  type GrainManifest, type SoftBinding, type BuildManifestInput, type ManifestSigner, type CreatedAssertion, type AgentAssertion,
+  type GrainManifest, type SoftBinding, type BuildManifestInput, type ManifestSigner, type CreatedAssertion, type AgentAssertion, type SourceCredentialAssertion,
 } from './manifest.ts';
 export { resolve, type Resolution, type ResolveInput, type ResolvedRecord } from './resolve.ts';
 export { identityAbi, reputationAbi, readAgent, controlsAgent, registryAddress, registrationUri, type AgentIdentity } from './erc8004.ts';

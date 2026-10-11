@@ -74,3 +74,9 @@ docs/DEMO.md
 
 # Submission write-up, drafted for the hackathon form
 SUBMISSION_DRAFT.md
+
+# Bounty video scripts (private, like docs/DEMO.md)
+docs/BOUNTY_VIDEOS.md
+
+# Copied from @contentauth/c2pa-web at build time (scripts/copy-c2pa.mjs)
+apps/web/public/c2pa/

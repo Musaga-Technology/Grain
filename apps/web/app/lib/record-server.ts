@@ -1,7 +1,7 @@
 import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { createPublicClient, http, keccak256, parseAbi, parseAbiItem, type Hex } from 'viem';
-import { decodeCbor, verifyManifest, type GrainManifest } from '@grain/core';
+import { decodeCbor, verifyManifest, type GrainManifest, type SourceCredentialAssertion } from '@grain/core';
 import { CONTRACTS, creatorAbi } from './chain';
 import { licencesFor, recordById } from './indexer';
 import { agentFor, type AgentView } from './agents';
@@ -81,6 +81,8 @@ export interface RecordView {
   agent?: AgentView;
   /** How the image was made, as declared and signed (C2PA digitalSourceType). */
   created?: { digitalSourceType?: string; softwareAgent?: string };
+  /** The C2PA credential the original carried at registration (OpenAI, Adobe, a camera). */
+  credential?: SourceCredentialAssertion;
   /** Where the manifest was found: the indexer, or a log search on chain. */
   source?: 'indexer' | 'chain';
   manifest?: Record<string, unknown>;
@@ -147,6 +149,7 @@ async function load(recordId: string): Promise<RecordView | null> {
       view.title = m.assertions?.title;
       view.generator = m.assertions?.generator;
       view.created = m.assertions?.created;
+      view.credential = (m.assertions as { source?: SourceCredentialAssertion } | undefined)?.source;
       view.agent = await agentFor(client as never, 10143, m as never, r.creator).catch(() => undefined);
       view.watermarked = bindings.some((b) => b.alg === 'com.adobe.trustmark.Q');
       view.signatureValid = (await verifyManifest(m as GrainManifest))

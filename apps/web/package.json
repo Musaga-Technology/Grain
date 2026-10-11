@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/copy-c2pa.mjs && next dev",
+    "build": "node scripts/copy-c2pa.mjs && next build",
     "start": "next start"
   },
   "dependencies": {
     "@category-labs/mera": "^0.2.0",
+    "@contentauth/c2pa-web": "^0.15",
     "@grain/core": "workspace:*",
     "@modelcontextprotocol/server": "^2",
     "@noble/hashes": "^2.4.0",

@@ -58,6 +58,34 @@ export interface AgentAssertion {
 export const ERC8004_IDENTITY_TESTNET = '0x8004A818BFB912233c491871b3d84c89A494BD9e';
 export const ERC8004_REPUTATION_TESTNET = '0x8004B663056A597Dffe9eCcC1965A193B7388713';
 
+/**
+ * A C2PA credential the image already carried when it was registered -- from
+ * OpenAI, Adobe Firefly, a camera. Platforms strip these from every copy;
+ * Grain keeps the evidence, so a screenshot still leads back to it.
+ *
+ * Read and validated in the creator's browser at registration (c2pa-web), then
+ * signed into this manifest. `assetSha256` is the hash of the exact file that
+ * carried the credential: whoever holds that original can re-validate it with
+ * any C2PA tool and confirm it is the file Grain recorded. A watermarked copy
+ * can't carry the original signature forward -- changing pixels breaks a C2PA
+ * hard binding by design -- so this is evidence of the credential, not a copy.
+ */
+export interface SourceCredentialAssertion {
+  standard: 'c2pa';
+  /** The active manifest's label in the original manifest store. */
+  manifest: string;
+  /** Who signed it: the certificate's common name, else its issuer. */
+  signer?: string;
+  issuer?: string;
+  /** The tool that made it, from the claim generator. */
+  tool?: string;
+  signedAt?: string;
+  /** C2PA validation state at registration: Trusted, Valid or Invalid. */
+  validation: 'Trusted' | 'Valid' | 'Invalid';
+  digitalSourceType?: string;
+  assetSha256: Hex;
+}
+
 export interface SoftBinding {
   alg: typeof TRUSTMARK_ALG | typeof GRAIN_PHASH_ALG;
   algId: number;
@@ -76,6 +104,7 @@ export interface GrainManifest {
     license?: { priceWei: bigint; terms: string };
     created?: CreatedAssertion;
     agent?: AgentAssertion;
+    source?: SourceCredentialAssertion;
   };
   private?: Hex;
   signature?: Hex;
@@ -93,6 +122,7 @@ export interface BuildManifestInput {
   license?: { priceWei: bigint; terms: string };
   created?: CreatedAssertion;
   agent?: AgentAssertion;
+  source?: SourceCredentialAssertion;
   private?: Hex;
 }
 
@@ -131,6 +161,7 @@ export function buildManifest(input: BuildManifestInput): GrainManifest {
       license: input.license,
       created: input.created,
       agent: input.agent,
+      source: input.source,
     },
     private: input.private,
   };

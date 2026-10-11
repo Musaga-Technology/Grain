@@ -149,6 +149,8 @@ export interface Verification {
   onChainDistance?: number;
   /** How the record's image was made, as declared by its creator. */
   madeWith?: string | null;
+  /** The C2PA credential the original carried at registration, e.g. OpenAI's. */
+  credential?: OriginalCredential | null;
 }
 
 export async function verifyImage(
@@ -166,9 +168,11 @@ export async function verifyImage(
     : resolution.state === 'UNCERTAIN' ? resolution.candidates[0] : undefined;
   if (subject) subject.creatorHandle ??= await handleOf(subject.creator);
 
-  const made = subject ? await madeWith(subject.recordId) : null;
+  const [made, credential] = subject
+    ? await Promise.all([madeWith(subject.recordId), originalCredential(subject.recordId).catch(() => null)])
+    : [null, null];
   return {
-    resolution, fingerprint: fp, madeWith: made,
+    resolution, fingerprint: fp, madeWith: made, credential,
     watermark: decodeWatermark ? (watermarkRecord ? 'found' : 'none') : 'skipped',
     candidatesFrom: cands.source,
     onChainDistance: subject ? await verifyOnChain(subject.recordId, fp).catch(() => undefined) : undefined,
@@ -226,7 +230,18 @@ export async function madeWith(recordId: bigint): Promise<string | null> {
   return null;
 }
 
-type Manifest = { assertions?: { created?: { digitalSourceType?: string; softwareAgent?: string }; agent?: { registry: string; agentId: string } } };
+type Manifest = { assertions?: { created?: { digitalSourceType?: string; softwareAgent?: string }; agent?: { registry: string; agentId: string }; source?: OriginalCredential } };
+
+/** The C2PA credential the original carried at registration (see grain-core SourceCredentialAssertion). */
+export interface OriginalCredential {
+  standard: 'c2pa'; manifest: string; signer?: string; issuer?: string; tool?: string; signedAt?: string;
+  validation: 'Trusted' | 'Valid' | 'Invalid'; digitalSourceType?: string; assetSha256: string;
+}
+
+/** The original C2PA credential a record kept, if its image had one when registered. */
+export async function originalCredential(recordId: bigint): Promise<OriginalCredential | null> {
+  return (await manifestOf(recordId))?.assertions?.source ?? null;
+}
 
 async function manifestOf(recordId: bigint): Promise<Manifest | null> {
   const data = await gql<{ Record: { manifest: string }[] }>(

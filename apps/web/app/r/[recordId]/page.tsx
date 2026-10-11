@@ -5,7 +5,7 @@ import { formatEther } from 'viem';
 import { Header, Footer } from '../../components/Chrome';
 import { loadLicensing, loadRecord } from '../../lib/record-server';
 import { Share } from '../../components/Share';
-import { MadeWith } from '../../components/Result';
+import { MadeWith, SourceCredential } from '../../components/Result';
 
 /**
  * A permanent, shareable record page.
@@ -87,6 +87,7 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
               ) : <span className="whitespace-nowrap">{creditName(null, record.agent)}</span>}
             </h1>
             <MadeWith manifest={{ assertions: { created: record.created } }} agent={record.agent} />
+            <SourceCredential source={record.credential} />
             <p className="mt-3 text-lg" style={{ color: 'var(--ink-muted)' }}>
               registered {relativeTime(record.registeredAt)}
               {record.blockNumber && record.txHash && (
@@ -171,6 +172,21 @@ export default async function RecordPage({ params }: { params: Promise<{ recordI
               {record.generator && (<>
                 <dt style={{ color: 'var(--ink-faint)' }}>Made with</dt>
                 <dd className="text-[15px]">{record.generator}</dd>
+              </>)}
+              {record.credential && (<>
+                <dt style={{ color: 'var(--ink-faint)' }}>Original credential</dt>
+                <dd className="text-[15px]">
+                  C2PA, signed by {record.credential.issuer ?? record.credential.signer}
+                  {record.credential.signer && record.credential.signer !== record.credential.issuer ? ` (${record.credential.signer})` : ''}
+                  {record.credential.signedAt ? `, ${new Date(record.credential.signedAt).toISOString().slice(0, 10)}` : ''}
+                  {' · '}{record.credential.validation.toLowerCase()} at registration
+                </dd>
+                <dt style={{ color: 'var(--ink-faint)' }}>Original manifest</dt>
+                <dd className="font-mono text-[13px] break-all">{record.credential.manifest}</dd>
+                <dt style={{ color: 'var(--ink-faint)' }}>Original file</dt>
+                <dd className="font-mono text-[13px] break-all" title="SHA-256 of the exact file that carried the credential: whoever holds it can re-check it with any C2PA tool">
+                  sha256 {record.credential.assetSha256.slice(2)}
+                </dd>
               </>)}
             </dl>
 
