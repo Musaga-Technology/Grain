@@ -308,7 +308,7 @@ Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding
 
 **Two things that aren't fully local.** Checking an image *by link* fetches that public image through Grain's server, because most sites don't let a browser read their images directly; the route is locked to public addresses, 15 MB and 10 seconds, and stores nothing. And the activity creators see is *reported by visitors' browsers*: the creator is looked up from the chain, so a report can't name someone else, but no chain can see a check that happened privately in a browser, so a report itself can't be proven. What the chain does guarantee is that the log can't change after it's sealed.
 
-**A testnet trade-off we haven't solved for mainnet:** a passkey account starts with no funds, and the no-wallet promise means a photographer can't top it up. So a small faucet pays for a new creator's first transactions. That is fine on testnet; on mainnet someone has to pay, and the funding model there is an open question.
+**Who pays on mainnet.** A passkey account starts with no funds, and the no-wallet promise means a photographer can't top it up, so on testnet a small faucet pays for a new creator's first transactions. On mainnet we'll sponsor them through a gas sponsor (paymaster), capped per account; at ~93k gas a registration, that's affordable for thousands of creators. It's funded at first by ecosystem grants, then by paid high-volume tiers of the verify API and MCP server for platforms, newsrooms and AI companies. People check for free, creators register for free, and every licence is paid 100% to the creator. The sponsor isn't built yet; testnet runs on the faucet.
 
 ---
 
