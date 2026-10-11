@@ -10,17 +10,20 @@
   "dependencies": {
     "@category-labs/mera": "^0.2.0",
     "@grain/core": "workspace:*",
+    "@modelcontextprotocol/server": "^2",
     "@noble/hashes": "^2.4.0",
     "@scure/bip32": "^2.4.0",
     "@scure/bip39": "^2.4.0",
     "@vercel/blob": "^2.8.1",
     "fflate": "^0.8.3",
+    "mcp-handler": "^2",
     "next": "15.5.26",
     "onnxruntime-web": "1.20.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "server-only": "^0.0.1",
-    "viem": "^2.56.8"
+    "viem": "^2.56.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -26,6 +26,7 @@
 - [Why Monad](#why-monad)
 - [Accounts on Mera: one passkey, many keys](#accounts-on-mera-one-passkey-many-keys)
 - [How Envio powers Grain](#how-envio-powers-grain)
+- [For AI assistants: the Grain MCP server](#for-ai-assistants-the-grain-mcp-server)
 - [For agents: one HTTP call](#for-agents-one-http-call)
 - [For agents: the MetaMask Agent Wallet plugin](#for-agents-the-metamask-agent-wallet-plugin)
 - [Why creators come back](#why-creators-come-back)
@@ -46,6 +47,7 @@
 | **One passkey, many keys** | [/me](https://grain-on-monad.vercel.app/me): your identity, pen names and private notes from a single prompt (Mera) |
 | **A creator's earnings** | [/c/grain-studio](https://grain-on-monad.vercel.app/c/grain-studio): licences bought by an AI agent through MetaMask, indexed by Envio |
 | **History nobody can rewrite** | [/sealed](https://grain-on-monad.vercel.app/sealed): the activity log, sealed on Monad, checked in your browser |
+| **From an AI assistant** | add `https://grain-on-monad.vercel.app/api/mcp` as an MCP connector ([how](#for-ai-assistants-the-grain-mcp-server)) |
 | **As an AI agent** | one call, no wallet: [`/api/v1/verify?url=…`](https://grain-on-monad.vercel.app/api/v1/verify?url=https://grain-on-monad.vercel.app/samples/forged.jpg) ([API](#for-agents-one-http-call)); or with MetaMask: `mm plugins install mm-plugin-grain`, then `mm grain verify <image>` ([plugin](plugins/mm-grain)) |
 | **AI-generated, by whom** | [/r/535](https://grain-on-monad.vercel.app/r/535): registered by an AI agent through its MetaMask wallet, credited to its ERC-8004 identity |
 
@@ -169,6 +171,31 @@ An indexer is a database someone runs, and Grain's whole argument is that proven
 ### Running it
 
 Envio Cloud deploys the indexer from this repository's `envio` branch (root directory `packages/indexer`). It reads Monad testnet through HyperSync, starting from the contracts' deployment block. The app reads the endpoint from `NEXT_PUBLIC_ENVIO_GRAPHQL_URL`; locally, `pnpm --filter @grain/indexer dev` runs the same indexer against the same contracts. Measurements and schema notes are in [docs/INDEXER.md](docs/INDEXER.md).
+
+---
+
+## For AI assistants: the Grain MCP server
+
+Any assistant that speaks the [Model Context Protocol](https://modelcontextprotocol.io), such as Claude, ChatGPT, Cursor or an agent framework, can ask Grain who made an image before it reposts, attributes or pays for it. Point it at one URL; there is no install, account or key:
+
+```
+https://grain-on-monad.vercel.app/api/mcp
+```
+
+| Tool | What the assistant gets |
+|---|---|
+| `verify_image` | who made an image (by URL or inline), forged credentials flagged, and the distance Monad's contract returned |
+| `get_record` | a record's creator, how it was made (photo, artwork, AI-generated, or which ERC-8004 agent), its Monad block, whether its signed manifest checks out, and its licence price and terms |
+| `get_creator` | a creator's images and what licences of their work have earned (via Envio) |
+| `check_pen_proof` | whether a [pen-name proof](#accounts-on-mera-one-passkey-many-keys) checks out against Monad |
+| `get_licence_terms` | what a Grain licence lets you do |
+
+The server's instructions tell the assistant to check before it attributes, and never to credit a TAMPERED image to the creator it imitates. Every tool runs the website's own code, so an assistant and a person get the same answer.
+
+```
+claude mcp add --transport http grain https://grain-on-monad.vercel.app/api/mcp     # Claude Code
+```
+In Claude or ChatGPT, add it as a custom connector with the same URL. Clients that only speak stdio can use `npx -y mcp-remote https://grain-on-monad.vercel.app/api/mcp`.
 
 ---
 

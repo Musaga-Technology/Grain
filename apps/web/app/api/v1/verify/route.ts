@@ -1,7 +1,5 @@
-import { decodeWatermark, useModelBytes } from '../../../lib/trustmark';
 import { FetchRefused, fetchPublicImage } from '../../../lib/fetch-public';
-import { verifyImage } from '../../../../../../plugins/mm-grain/src/lib/grain.ts';
-import { toResult } from '../../../../../../plugins/mm-grain/src/lib/format.ts';
+import { checkImage } from '../../../lib/verify-server';
 
 /**
  * Who made this image? One HTTP call, for any agent or service: no wallet, no
@@ -10,9 +8,8 @@ import { toResult } from '../../../../../../plugins/mm-grain/src/lib/format.ts';
  *   curl -X POST https://grain-on-monad.vercel.app/api/v1/verify --data-binary @photo.jpg
  *   curl "https://grain-on-monad.vercel.app/api/v1/verify?url=https://example.com/photo.jpg"
  *
- * It runs the MetaMask plugin's resolver unchanged -- grain-core's verdict
- * logic, the website's TrustMark port, Envio with a chain fallback -- so the
- * site, `mm grain verify` and this endpoint cannot disagree about an image.
+ * It runs the same check as the website, the MCP server and `mm grain verify`
+ * (lib/verify-server), so they cannot disagree about an image.
  * Every verdict carries the distance FingerprintIndex.verify() returned on
  * Monad, so the caller can check the answer without trusting this server.
  * The image is checked in memory and never stored.
@@ -24,19 +21,6 @@ export const dynamic = 'force-dynamic';
 const MAX_UPLOAD = 4 * 1024 * 1024; // Vercel's request body limit is 4.5 MB; larger images go by ?url=
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type' };
 
-// The TrustMark decoder (45 MB) and resizer, fetched from this deployment once
-// per warm instance.
-let models: Promise<void> | undefined;
-function loadModels(origin: string): Promise<void> {
-  models ??= Promise.all(['decoder_Q.onnx', 'resizer.onnx'].map(async (file) => {
-    const res = await fetch(`${origin}/models/${file}`);
-    if (!res.ok) throw new Error(`model ${file}: ${res.status}`);
-    return new Uint8Array(await res.arrayBuffer());
-  })).then(([decoder, resizer]) => useModelBytes({ decoder, resizer }));
-  models.catch(() => { models = undefined; });
-  return models;
-}
-
 function fail(error: string, status: number) {
   return Response.json({ error }, { status, headers: CORS });
 }
@@ -44,8 +28,7 @@ function fail(error: string, status: number) {
 async function check(req: Request, bytes: Uint8Array) {
   const origin = new URL(req.url).origin;
   try {
-    await loadModels(origin);
-    const result = toResult(await verifyImage(bytes, decodeWatermark));
+    const result = await checkImage(bytes, origin);
     return Response.json(result, { headers: { ...CORS, 'cache-control': 'no-store' } });
   } catch (e) {
     const message = (e as Error).message ?? '';
