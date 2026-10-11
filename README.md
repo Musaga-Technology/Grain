@@ -16,7 +16,7 @@
 | **Monad** | [Why Monad](#why-monad): on-chain search and proof, ~93k gas per image, 0.53 s to confirm, parallel execution [burst-tested](docs/PARALLEL.md) | [record 535](https://grain-on-monad.vercel.app/r/535) |
 | **MetaMask Agent Wallet** | [the plugin](#for-agents-the-metamask-agent-wallet-plugin): verify, license, pay, and agents registering their own work under ERC-8004; [two MetaMask bugs we traced](#things-we-found-and-fixed-or-stated) | [npm](https://www.npmjs.com/package/mm-plugin-grain), [a licence approved by email](https://testnet.monadscan.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17) |
 | **Mera: One Passkey, Many Keys** | [Accounts on Mera](#accounts-on-mera-one-passkey-many-keys): one prompt gives an identity, unlinkable pen names and a private-notes key | [/me](https://grain-on-monad.vercel.app/me), [/register](https://grain-on-monad.vercel.app/register) |
-| **Envio** | [How Envio powers Grain](#how-envio-powers-grain): every read, 90 ms vs 980 ms, every answer checked against the chain | [/c/grain-studio](https://grain-on-monad.vercel.app/c/grain-studio), [/sealed](https://grain-on-monad.vercel.app/sealed) |
+| **Envio** | [How Envio powers Grain](#how-envio-powers-grain): creator portfolios, earnings and the live feed that the contracts can't list, every answer checked against the chain | [/c/grain-studio](https://grain-on-monad.vercel.app/c/grain-studio), [/sealed](https://grain-on-monad.vercel.app/sealed) |
 
 ## Contents
 
@@ -147,7 +147,7 @@ The indexer ([`packages/indexer`](packages/indexer)) follows five events across 
 
 | Screen | Served by Envio | Without Envio |
 |---|---|---|
-| **Verify** — "who made this image?" | the candidate search: one query, **90 ms** | 8 band reads + a read per candidate, **980 ms** |
+| **Verify** — "who made this image?" | the candidate search: one indexed query, returning each candidate's record in the same response | 8 band reads + a read per candidate; batched into a multicall it is about as fast, so speed is not the main reason |
 | **Record page** `/r/:id` | the manifest, block and transaction in one query | an estimated block window, then a `getLogs` search |
 | **Creator page** `/c/:handle` | every record under a name, newest first | **not possible** without scanning every record |
 | **Landing** — "Recently registered" | the latest records and registry totals, live | **not possible** without scanning every record |
@@ -287,7 +287,7 @@ JPEG 20 defeats the watermark but not the fingerprint; a 10% crop defeats the fi
 | LSH recall, 1,000 records, ≤7 bits flipped | **100%** — the pigeonhole guarantee behind the 8 × 8 band geometry |
 | Verify, end to end in the browser | **~2 s** |
 | First answer on a cold first visit | **5.8 s** — the fingerprint answers while the watermark model downloads |
-| Candidate fan-out through the Envio indexer | **90 ms**, vs 980 ms reading 8 bands from the chain |
+| Candidate fan-out through the Envio indexer | 90 ms vs 980 ms for 8 separate chain reads (25 Sep); against the same 8 reads batched into one multicall, about even (≈200 ms each, 11 Oct). Envio's value is the answers the chain can't give, below |
 
 Gas figures in [docs/GAS.md](docs/GAS.md).
 

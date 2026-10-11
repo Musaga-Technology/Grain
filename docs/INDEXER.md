@@ -12,7 +12,7 @@ working with it switched off (SPEC §7).
 
 | Where | What the indexer does | Without it |
 |---|---|---|
-| Verify | the LSH candidate fan-out, one query | 8 chain reads, ~11x slower |
+| Verify | the LSH candidate fan-out, one query | 8 chain reads; slower one by one, about even batched (below) |
 | Record page `/r/:id` | returns the manifest, block and tx in one query; the manifest is hashed and compared with the hash the contract stores | a log search over a 100-block window |
 | Creator page `/c/:handle` | every record under a name | **not possible** — the contracts cannot list a creator's records without a full scan; the page says the listing is unavailable |
 | Landing, "Recently registered" | the latest records and registry totals | **not possible** without a full scan; the section is left out |
@@ -35,7 +35,16 @@ Resolving by fingerprint means finding every record sharing any of the query's
 | Envio, one GraphQL query | **90 ms** |
 
 Both return the identical 34 candidates for the same fingerprint. That is
-roughly 11x on the single slowest remaining piece of a resolve.
+roughly 11x against eight separate reads.
+
+**Re-measured 11 Oct 2026, 541 records.** Eight separate reads took a median
+2,346 ms against Envio's 278 ms. But batched into one multicall -- which is how
+Grain's chain fallback reads them -- the eight reads took a median 222-427 ms
+against Envio's 181-430 ms over three runs, with identical candidates. So the
+fan-out is not where Envio earns its place; speed against an unbatched read is
+not a fair comparison. What the chain cannot do at all is the table above:
+list a creator's records, sum their licences, show what was registered
+recently, list seals with their transactions.
 
 ## Why bands are rows, not an array column
 
