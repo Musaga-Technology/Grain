@@ -87,6 +87,8 @@ const TEST_ACCOUNTS = [
   '0x8bc29bb1e8ea3dcbe80ed5ffb58aa1b379f2e96b', // grain-ai-label-test-8bc2
   '0x6c003811b46ea352334aa7a97f9db1a4165d4572', // demo recording dry run, record 537
   '0xab966d98af16a43c5ad077a9d30678ada395446b', // demo recording dry run (pen name), record 538
+  '0xa6ff747455c88629dcd8f3f7639d14f53d61f58e', // pen-name proof test, identity
+  '0xcd34a8e905df3bcb2c35bd011df0176d17e0eacc', // pen-name proof test, pen name
 ];
 
 const RECORD_FIELDS = `recordId creator fingerprint registeredAt blockNumber txHash manifest revoked supersededBy

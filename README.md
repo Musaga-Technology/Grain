@@ -110,6 +110,7 @@ Identity is built entirely on **Mera**, Monad's passkey account layer: no seed p
 | **Identity** (`m/44'/60'/0'/0/0`) | the creator's account; signs every manifest and transaction |
 | **Pen names** (`m/44'/60'/1'/0/n`) | publish under another name; each is its own account, unlinkable on chain to your identity or to each other |
 | **Private-notes key** (HKDF, `grain.v1.private-notes`) | an optional note on each record (where it was shot, the client), sealed with AES-256-GCM before it leaves the device; only your passkey can read it |
+| **Pen-link key** (HKDF, `grain.v1.pen-link`) | never signs anything: it makes each pen name's secret tag. A pen name records `keccak256(tag ‖ identity)` on chain, which is noise to everyone. To prove one pen name is yours, to a client, an editor, a court, share a [proof link](https://grain-on-monad.vercel.app/proof): anyone's browser checks it against Monad. Your other pen names stay unlinkable. |
 
 Signing keys run as Mera secp256k1 signing sessions through Mera's `toViemAccount`, so each key is zeroed when its session ends. Nothing derived is ever stored: at [**Your work**](https://grain-on-monad.vercel.app/me), one prompt on any device recovers your identity, finds every pen name by asking the chain, shows each one's records and earnings, and opens your private notes. The identity path goes through BIP-39, so the same account imports into MetaMask or Rabby: nobody is locked into Grain to control their own identity.
 

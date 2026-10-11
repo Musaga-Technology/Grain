@@ -30,6 +30,11 @@ import { bytesToHex, hexToBytes, type Hex } from 'viem';
  *   notes key   HKDF(prf, "grain.v1.private-notes") -> AES-256-GCM. Encrypts
  *                                  a record's private note, which only this
  *                                  passkey can read.
+ *   pen-link key HKDF(prf, "grain.v1.pen-link") -> HMAC-SHA256. Never signs
+ *                                  anything: it makes each pen name's secret
+ *                                  tag, so the creator can later prove one pen
+ *                                  name is theirs and leave the rest
+ *                                  unlinkable (see lib/pen-proof).
  *
  * Signing keys run as Mera secp256k1 signing sessions, adapted to viem with
  * Mera's toViemAccount, so a key lives exactly as long as its session and is
@@ -42,6 +47,7 @@ import { bytesToHex, hexToBytes, type Hex } from 'viem';
 /** The PRF salt. Unchanged from the first release, so existing accounts keep their addresses. */
 const PRF_LABEL = 'grain.identity.v1';
 const NOTES_INFO = 'grain.v1.private-notes';
+const PEN_LINK_INFO = 'grain.v1.pen-link';
 
 const STORAGE_KEY = 'grain.credential.v1';
 const RP_NAME = 'Grain';
@@ -142,6 +148,8 @@ export interface Keyring {
   sealNote: (note: string) => Promise<Hex>;
   /** Decrypts a note sealed by this passkey; null if it isn't ours or is damaged. */
   openNote: (sealed: Hex) => Promise<string | null>;
+  /** A pen name's secret tag, HMAC(pen-link key, pen address): revealing it proves that one pen name. */
+  penLinkTag: (penAddress: string) => Promise<Hex>;
   /** Ends every session and wipes the derived material. */
   end: () => void;
 }
@@ -167,6 +175,10 @@ export async function keyringFrom(entropy: Uint8Array): Promise<Keyring> {
   const notesKey = await crypto.subtle.deriveKey(
     { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32) as BufferSource, info: new TextEncoder().encode(NOTES_INFO) },
     base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'],
+  );
+  const penLinkKey = await crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32) as BufferSource, info: new TextEncoder().encode(PEN_LINK_INFO) },
+    base, { name: 'HMAC', hash: 'SHA-256', length: 256 }, false, ['sign'],
   );
   entropy.fill(0);
 
@@ -195,6 +207,9 @@ export async function keyringFrom(entropy: Uint8Array): Promise<Keyring> {
         return null;
       }
     },
+    penLinkTag: async (penAddress) => bytesToHex(new Uint8Array(await crypto.subtle.sign(
+      'HMAC', penLinkKey, new TextEncoder().encode(penAddress.toLowerCase()),
+    ))),
     end: () => { for (const s of sessions) s.end(); root.wipePrivateData(); },
   };
 }

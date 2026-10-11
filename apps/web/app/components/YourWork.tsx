@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { formatEther, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, formatEther, http, type Address, type Hex } from 'viem';
 import { decodeCbor } from '@grain/core';
 import { unlock, deviceKeyring, storedCredential, hasDeviceKey, PasskeyUnavailable, type Keyring } from '../lib/mera';
 import { discoverPenNames } from '../lib/pen-names';
 import { creatorByAddress, type CreatorPage } from '../lib/indexer';
+import { CONTRACTS, creatorAbi, monadTestnet } from '../lib/chain';
+import { penProfileURI, proofLink, proofMessage } from '../lib/pen-proof';
 
 /**
  * "Your work": one passkey prompt, every key.
@@ -17,14 +19,21 @@ import { creatorByAddress, type CreatorPage } from '../lib/indexer';
  * stored anywhere: on a new device, the same passkey recovers all of it.
  */
 
-interface Persona { kind: 'identity' | 'pen'; address: string; handle: string | null; page: CreatorPage | null | 'unavailable' }
+interface Persona {
+  kind: 'identity' | 'pen'; address: string; handle: string | null; page: CreatorPage | null | 'unavailable';
+  /** Pen names only: its slot, and whether its on-chain profile holds this passkey's commitment. */
+  n?: number; provable?: boolean;
+}
 type Phase =
   | { kind: 'locked' }
   | { kind: 'unlocking'; message: string }
-  | { kind: 'open'; personas: Persona[]; notes: Record<string, string> }
+  | { kind: 'open'; personas: Persona[]; notes: Record<string, string>; useDevice: boolean }
   | { kind: 'error'; message: string };
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const chain = createPublicClient({ chain: monadTestnet, transport: http(process.env.NEXT_PUBLIC_RPC_URL), pollingInterval: 250 });
+const profileOf = (address: string) =>
+  chain.readContract({ address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'creators', args: [address as Address] });
 
 async function notesFor(ring: Keyring, pages: CreatorPage[]): Promise<Record<string, string>> {
   const notes: Record<string, string> = {};
@@ -63,12 +72,18 @@ export function YourWork() {
       setPhase({ kind: 'unlocking', message: 'Reading your records' });
       const personas: Persona[] = await Promise.all([
         { kind: 'identity' as const, address: ring.identity.account.address, handle: null },
-        ...pens.map((p) => ({ kind: 'pen' as const, address: p.address, handle: p.handle })),
+        ...pens.map((p) => ({ kind: 'pen' as const, address: p.address, handle: p.handle, n: p.n })),
       ].map(async (p) => ({ ...p, page: await creatorByAddress(p.address) })));
+      // Is each pen name provable? Its profile must hold exactly this passkey's commitment.
+      for (const p of personas) {
+        if (p.kind !== 'pen') continue;
+        const expected = penProfileURI(await ring.penLinkTag(p.address), ring.identity.account.address);
+        p.provable = await profileOf(p.address).then((c) => c.profileURI === expected).catch(() => false);
+      }
       setPhase({ kind: 'unlocking', message: 'Opening your private notes' });
       const pages = personas.map((p) => p.page).filter((p): p is CreatorPage => Boolean(p) && p !== 'unavailable');
       const notes = await notesFor(ring, pages);
-      setPhase({ kind: 'open', personas, notes });
+      setPhase({ kind: 'open', personas, notes, useDevice });
     } catch {
       setPhase({ kind: 'error', message: "Grain couldn't load your work just now. Try again." });
     } finally {
@@ -139,6 +154,11 @@ export function YourWork() {
                 <Link href={`/c/${page.handle}`} className="text-sm underline underline-offset-4">Public page &rarr;</Link>
               )}
             </div>
+            {p.kind === 'pen' && (
+              <PenProof persona={p} useDevice={phase.useDevice}
+                        onProvable={() => setPhase((ph) => ph.kind === 'open'
+                          ? { ...ph, personas: ph.personas.map((x) => (x.address === p.address ? { ...x, provable: true } : x)) } : ph)} />
+            )}
             {page === 'unavailable' && <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>The indexer isn&rsquo;t answering just now.</p>}
             {!page && <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>Nothing registered under this one yet.</p>}
             {page && page !== 'unavailable' && (
@@ -165,6 +185,88 @@ export function YourWork() {
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Prove one pen name is yours, and only that one. Each action asks for the
+ * passkey again: the keys from the first prompt were wiped when the page loaded.
+ */
+function PenProof({ persona, useDevice, onProvable }: { persona: Persona; useDevice: boolean; onProvable: () => void }) {
+  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'busy'; message: string } | { kind: 'link'; url: string; copied: boolean } | { kind: 'error'; message: string }>({ kind: 'idle' });
+  const handle = persona.handle!;
+
+  const withRing = async <T,>(fn: (ring: Keyring) => Promise<T>): Promise<T> => {
+    const ring = useDevice ? await deviceKeyring() : await unlock();
+    try { return await fn(ring); } finally { ring.end(); }
+  };
+
+  const makeProvable = async () => {
+    try {
+      setState({ kind: 'busy', message: 'Waiting for your passkey' });
+      await withRing(async (ring) => {
+        const pen = ring.penName(persona.n!);
+        const uri = penProfileURI(await ring.penLinkTag(pen.account.address), ring.identity.account.address);
+        setState({ kind: 'busy', message: `Recording @${handle}'s commitment on Monad` });
+        await fetch('/api/fund', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: pen.account.address }) }).catch(() => {});
+        const current = await profileOf(pen.account.address);
+        const wallet = createWalletClient({ account: pen.account, chain: monadTestnet, transport: http(process.env.NEXT_PUBLIC_RPC_URL) });
+        let hash: Hex | undefined;
+        for (let attempt = 0; attempt < 3 && !hash; attempt++) {
+          // A freshly funded account can lag a block behind; try again shortly.
+          hash = await wallet.writeContract({
+            address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
+            args: [current.handle || handle, uri, current.licensePriceWei],
+          }).catch(async (e) => { if (attempt === 2) throw e; await new Promise((r) => setTimeout(r, 1500)); return undefined; });
+        }
+        const receipt = await chain.waitForTransactionReceipt({ hash: hash! });
+        if (receipt.status !== 'success') throw new Error('reverted');
+      });
+      onProvable();
+      setState({ kind: 'idle' });
+    } catch (e) {
+      setState({ kind: 'error', message: e instanceof PasskeyUnavailable ? e.message : "That didn't go through. Try again." });
+    }
+  };
+
+  const prove = async () => {
+    try {
+      setState({ kind: 'busy', message: 'Waiting for your passkey' });
+      const url = await withRing(async (ring) => {
+        const pen = ring.penName(persona.n!).account.address;
+        const identity = ring.identity.account.address;
+        const issuedAt = Math.floor(Date.now() / 1000);
+        const sig = await ring.identity.account.signMessage({ message: proofMessage(handle, pen, identity, issuedAt) });
+        return proofLink(location.origin, { pen: handle, identity, tag: await ring.penLinkTag(pen), issuedAt, sig });
+      });
+      const copied = await navigator.clipboard.writeText(url).then(() => true).catch(() => false);
+      setState({ kind: 'link', url, copied });
+    } catch (e) {
+      setState({ kind: 'error', message: e instanceof PasskeyUnavailable ? e.message : "Couldn't make the proof just now. Try again." });
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border px-4 py-3 text-[14px]" style={{ borderColor: 'var(--rule)' }}>
+      {state.kind === 'busy' ? <p className="grain-pulse" style={{ color: 'var(--ink-muted)' }}>{state.message}</p>
+        : state.kind === 'link' ? (
+          <>
+            <p><span style={{ color: 'var(--brand)' }}>&#10003;</span> Proof that @{handle} is you{state.copied ? ', copied' : ''}. Share it only with whoever should know.</p>
+            <a href={state.url} target="_blank" rel="noreferrer" className="mt-1 block truncate font-mono text-[12px] underline underline-offset-4" style={{ color: 'var(--ink-muted)' }}>{state.url}</a>
+          </>
+        ) : persona.provable ? (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span style={{ color: 'var(--ink-muted)' }}>Unlinkable to you, unless you choose to prove it.</span>
+            <button onClick={() => void prove()} className="grain-btn rounded-full px-4 py-1.5 text-sm">Prove @{handle} is me</button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span style={{ color: 'var(--ink-muted)' }}>Not provable yet. Recording a commitment reveals nothing until you share a proof.</span>
+            <button onClick={() => void makeProvable()} className="rounded-full border px-4 py-1.5 text-sm" style={{ borderColor: 'var(--rule)' }}>Make provable</button>
+          </div>
+        )}
+      {state.kind === 'error' && <p className="mt-1" style={{ color: 'var(--accent)' }}>{state.message}</p>}
     </div>
   );
 }

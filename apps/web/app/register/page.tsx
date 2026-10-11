@@ -10,6 +10,7 @@ import {
 } from '@grain/core';
 import { Header, Footer } from '../components/Chrome';
 import { unlock, deviceKeyring, PasskeyUnavailable, storedCredential, type Keyring, type Session } from '../lib/mera';
+import { penProfileURI } from '../lib/pen-proof';
 import { knownPenNames, rememberPenName, findPenSlot } from '../lib/pen-names';
 import { checkPasskeySupport, hasBuiltInAuthenticator, prfAdvice } from '../lib/passkey-support';
 import { monadTestnet, CONTRACTS, registryAbi, creatorAbi } from '../lib/chain';
@@ -209,9 +210,14 @@ export default function Register() {
         try {
           step(penHandle ? 'Saving your pen name' : 'Saving your name');
           const chosen = await availableHandle(wanted, session.account.address);
+          // A pen name records a commitment that lets its creator prove it
+          // later, and reveals nothing until they do (lib/pen-proof).
+          const profileURI = penHandle && penSlot !== null
+            ? penProfileURI(await ring.penLinkTag(session.account.address), ring.identity.account.address)
+            : '';
           const tx = await afterFunding(() => wallet.writeContract({
             address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
-            args: [chosen, '', priceWei ?? 0n],
+            args: [chosen, profileURI, priceWei ?? 0n],
           }));
           const receipt = await reader.waitForTransactionReceipt({ hash: tx });
           if (receipt.status === 'success') handle = chosen;
@@ -223,9 +229,13 @@ export default function Register() {
         const keep = handle;
         try {
           step('Saving your licence price');
+          // Keep the rest of the profile, a pen name's commitment included.
+          const current = await reader.readContract({
+            address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'creators', args: [session.account.address],
+          });
           const tx = await afterFunding(() => wallet.writeContract({
             address: CONTRACTS.CreatorRegistry, abi: creatorAbi, functionName: 'setProfile',
-            args: [keep, '', priceWei],
+            args: [keep, current.profileURI, priceWei],
           }));
           await reader.waitForTransactionReceipt({ hash: tx });
         } catch (e) {
