@@ -96,13 +96,17 @@ export class PasskeyUnavailable extends Error {
   }
 }
 
-async function prfOutput(displayName?: string): Promise<Uint8Array> {
+/**
+ * `create` (registering): use the passkey this browser knows, or make one on a
+ * first visit. `existing` (Your work, a new device): never make one; let the
+ * person pick any Grain passkey they already have -- synced from another
+ * device, or remembered nowhere at all -- and remember the one they chose.
+ */
+async function prfOutput(displayName?: string, mode: 'create' | 'existing' = 'create'): Promise<Uint8Array> {
   const salt = prfSalt();
   const existing = storedCredential();
 
   try {
-    // The app knows whether this is a first visit; it never asks the person to
-    // choose between "create account" and "sign in".
     if (existing) {
       const { prfOutput } = await getPasskeyPrfOutput({
         rpId: location.hostname,
@@ -113,6 +117,12 @@ async function prfOutput(displayName?: string): Promise<Uint8Array> {
         prfSalt: salt,
       });
       return prfOutput;
+    }
+    if (mode === 'existing') {
+      // No credential id: WebAuthn offers every discoverable Grain passkey.
+      const found = await getPasskeyPrfOutput({ rpId: location.hostname, prfSalt: salt });
+      remember({ credentialId: found.credentialId });
+      return found.prfOutput;
     }
 
     const created = await createPasskeyWithPrfOutput({
@@ -217,6 +227,11 @@ export async function keyringFrom(entropy: Uint8Array): Promise<Keyring> {
 /** One passkey prompt -> every key. Creates the passkey on a first visit. */
 export async function unlock(displayName?: string): Promise<Keyring> {
   return keyringFrom(await prfOutput(displayName));
+}
+
+/** One passkey prompt -> every key, from a passkey the person already has. Never creates one. */
+export async function unlockExisting(): Promise<Keyring> {
+  return keyringFrom(await prfOutput(undefined, 'existing'));
 }
 
 /** The creator signing key alone, for callers that need nothing else. */

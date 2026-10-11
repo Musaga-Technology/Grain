@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { createPublicClient, createWalletClient, formatEther, http, type Address, type Hex } from 'viem';
 import { decodeCbor } from '@grain/core';
-import { unlock, deviceKeyring, storedCredential, hasDeviceKey, PasskeyUnavailable, type Keyring } from '../lib/mera';
+import { unlockExisting, deviceKeyring, storedCredential, hasDeviceKey, PasskeyUnavailable, type Keyring } from '../lib/mera';
 import { discoverPenNames } from '../lib/pen-names';
 import { creatorByAddress, type CreatorPage } from '../lib/indexer';
 import { CONTRACTS, creatorAbi, monadTestnet } from '../lib/chain';
@@ -61,7 +61,7 @@ export function YourWork() {
     let ring: Keyring;
     try {
       setPhase({ kind: 'unlocking', message: useDevice ? 'Opening the key in this browser' : 'Waiting for your passkey' });
-      ring = useDevice ? await deviceKeyring() : await unlock();
+      ring = useDevice ? await deviceKeyring() : await unlockExisting();
     } catch (e) {
       setPhase({ kind: 'error', message: e instanceof PasskeyUnavailable ? e.message : "Grain couldn't use your passkey just now. Try again." });
       return;
@@ -110,7 +110,8 @@ export function YourWork() {
         )}
         {!hasPasskey && !deviceOnly && (
           <p className="mt-6 text-sm" style={{ color: 'var(--ink-faint)' }}>
-            Haven&rsquo;t registered yet? <Link href="/register" className="underline underline-offset-4">Register an image</Link> first.
+            New device? Your passkey brings everything back. Haven&rsquo;t registered yet?{' '}
+            <Link href="/register" className="underline underline-offset-4">Register an image</Link> first.
           </p>
         )}
       </div>
@@ -128,13 +129,14 @@ export function YourWork() {
       <h1 style={{ fontFamily: 'var(--serif)' }} className="text-4xl sm:text-5xl">Your work</h1>
 
       <section className="mt-8 rounded-lg px-5 py-4" style={{ background: 'var(--brand-soft)' }}>
-        <p className="text-sm font-medium">One passkey, one prompt, {2 + pens.length} keys</p>
+        <p className="text-sm font-medium">One passkey, one prompt, {3 + pens.length} keys</p>
         <ul className="mt-3 space-y-1.5 text-[14px]" style={{ color: 'var(--ink-muted)' }}>
           <li><span style={{ color: 'var(--ink)' }}>Your identity</span> &middot; <span className="font-mono text-[12px]">{short(personas[0].address)}</span></li>
           {pens.map((p) => (
             <li key={p.address}><span style={{ color: 'var(--ink)' }}>Pen name @{p.handle}</span> &middot; <span className="font-mono text-[12px]">{short(p.address)}</span> &middot; unlinkable on chain</li>
           ))}
           <li><span style={{ color: 'var(--ink)' }}>Private-notes key</span> &middot; opened {Object.keys(notes).length} {Object.keys(notes).length === 1 ? 'note' : 'notes'}</li>
+          <li><span style={{ color: 'var(--ink)' }}>Pen-link key</span> &middot; proves a pen name is yours, only when you choose</li>
         </ul>
         <p className="mt-3 text-xs" style={{ color: 'var(--ink-faint)' }}>
           Derived in this browser from your passkey and wiped when this page finished loading. Nothing was stored.
@@ -198,7 +200,7 @@ function PenProof({ persona, useDevice, onProvable }: { persona: Persona; useDev
   const handle = persona.handle!;
 
   const withRing = async <T,>(fn: (ring: Keyring) => Promise<T>): Promise<T> => {
-    const ring = useDevice ? await deviceKeyring() : await unlock();
+    const ring = useDevice ? await deviceKeyring() : await unlockExisting();
     try { return await fn(ring); } finally { ring.end(); }
   };
 
