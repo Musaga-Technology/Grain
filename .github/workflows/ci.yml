@@ -25,6 +25,9 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
       - run: forge test -vv
         working-directory: packages/contracts
+      # Gas regressions fail the build: the snapshot is committed (.gas-snapshot).
+      - run: forge snapshot --check --no-match-path test/Properties.t.sol
+        working-directory: packages/contracts
 
   web:
     name: web app typecheck

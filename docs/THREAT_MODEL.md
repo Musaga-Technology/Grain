@@ -56,6 +56,21 @@ mitigation is partial, it says so.
 | Steer an AI assistant through record text | A title or note shown to an assistant could carry instructions | MCP tools return record data as plain text in a fixed format, and the server's instructions tell the assistant to cite, not obey | **Partial:** titles are creator-written; assistants should treat them as data |
 | Drain the faucet | Spam registrations | Grants capped per account, priced from gas; testnet only | Mainnet plan: capped gas sponsorship |
 
+## Contract properties, tested
+
+Beyond the unit tests, [`test/Properties.t.sol`](../packages/contracts/test/Properties.t.sol)
+checks properties for any input: `verify()` is exactly the Hamming distance;
+every record sits in all 8 band buckets; manifest hashes round-trip; only the
+creator can withdraw a record; a licence forwards exactly the price, refunds the
+excess and leaves nothing in the contract; underpayment is refused. Invariants
+hold across 4,096 random registrations, supersedes, withdrawals and licences:
+ids are sequential, the index stays consistent with the records, withdrawal and
+supersede are one-way, and the licence contract never holds funds. Gas is
+snapshotted and checked in CI.
+
+One behaviour worth stating: `LicenseRegistry` will license a withdrawn record
+(the creator is still paid). The website, API and plugin refuse to offer it.
+
 ## Trust boundaries
 
 - **Trusted by design:** Monad (the contracts and their state), the creator's

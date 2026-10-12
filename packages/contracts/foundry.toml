@@ -4,3 +4,13 @@ out = "out"
 libs = ["lib"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[invariant]
+# 64 random sequences of 64 actions each: thousands of registers, supersedes,
+# revokes and licences, with every invariant checked after each step.
+runs = 64
+depth = 64
+fail_on_revert = false
+
+[fuzz]
+runs = 1000

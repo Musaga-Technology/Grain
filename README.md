@@ -331,8 +331,9 @@ pnpm install
 ./scripts/fetch-web-models.sh        # TrustMark models + WASM runtime, served by the app
 pnpm --filter @grain/web dev
 
-node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 46 tests
-cd packages/contracts && forge test                                          # 46 tests
+node --experimental-strip-types --test packages/grain-core/test/*.test.ts   # 47 tests
+cd packages/contracts && forge test                                          # 56 tests: 46 unit, 6 fuzz (1,000 inputs each), 4 invariants (4,096 random actions each)
+cd packages/contracts && forge snapshot --check --no-match-path test/Properties.t.sol   # gas regressions, also in CI
 ```
 
 Registering needs a passkey that supports the WebAuthn PRF extension — Safari with iCloud Keychain, Chrome with Google Password Manager, Android, or 1Password. Without one, Grain offers to keep a key in the browser instead, and says what that gives up before you choose it.
