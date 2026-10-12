@@ -342,6 +342,7 @@ Registering needs a passkey that supports the WebAuthn PRF extension — Safari 
 | [docs/ROBUSTNESS.md](docs/ROBUSTNESS.md) | the robustness matrix and thresholds |
 | [docs/GAS.md](docs/GAS.md) | gas, and the LSH scaling ceiling |
 | [docs/INDEXER.md](docs/INDEXER.md) | the Envio indexer |
+| [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) | what Grain proves and doesn't, every attack we know of, and its status |
 | [docs/SURVIVAL.md](docs/SURVIVAL.md) | real ChatGPT images through WhatsApp: C2PA gone from every copy, recovered by Grain |
 | [docs/PARALLEL.md](docs/PARALLEL.md) | registration under Monad's parallel execution, burst-tested |
 | [packages/grain-core](packages/grain-core) | fingerprint, manifest, resolution — isomorphic TypeScript |
