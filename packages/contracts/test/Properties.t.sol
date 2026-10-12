@@ -14,8 +14,9 @@ import {Test} from "forge-std/Test.sol";
 /// in the unit tests.
 contract FuzzTest is Base {
     function _popcount(uint64 x) internal pure returns (uint8 n) {
-        while (x != 0) n += uint8(x & 1);
-        x >>= 1;
+        for (uint256 i = 0; i < 64; i++) {
+            if ((x >> i) & 1 == 1) n++;
+        }
     }
 
     /// verify() is exactly the Hamming distance, for every pair of fingerprints.
