@@ -1,0 +1,225 @@
+{
+  "active_manifest": "urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85",
+  "manifests": {
+    "urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85": {
+      "claim_generator_info": [
+        {
+          "name": "ChatGPT",
+          "org.cai.c2pa_rs": "0.51.1"
+        }
+      ],
+      "title": "image.png",
+      "instance_id": "xmp:iid:97fe56ff-d789-462e-82fc-6ff8131737ee",
+      "ingredients": [
+        {
+          "title": "image.png",
+          "format": "png",
+          "instance_id": "xmp:iid:ae4fa7fc-ff44-4191-8afd-2109aa5c5334",
+          "thumbnail": {
+            "format": "image/jpeg",
+            "identifier": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.assertions/c2pa.thumbnail.ingredient.jpeg"
+          },
+          "relationship": "componentOf",
+          "active_manifest": "urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c",
+          "validation_results": {
+            "activeManifest": {
+              "success": [
+                {
+                  "code": "claimSignature.insideValidity",
+                  "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.signature",
+                  "explanation": "claim signature valid"
+                },
+                {
+                  "code": "claimSignature.validated",
+                  "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.signature",
+                  "explanation": "claim signature valid"
+                },
+                {
+                  "code": "assertion.hashedURI.match",
+                  "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.assertions/c2pa.actions.v2",
+                  "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.actions.v2"
+                },
+                {
+                  "code": "assertion.hashedURI.match",
+                  "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.assertions/c2pa.hash.data",
+                  "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.hash.data"
+                },
+                {
+                  "code": "assertion.dataHash.match",
+                  "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.assertions/c2pa.hash.data",
+                  "explanation": "data hash valid"
+                }
+              ],
+              "informational": [],
+              "failure": []
+            }
+          },
+          "manifest_data": {
+            "format": "application/c2pa",
+            "identifier": "urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c"
+          },
+          "label": "c2pa.ingredient.v3"
+        }
+      ],
+      "assertions": [],
+      "signature_info": {
+        "alg": "Es256",
+        "issuer": "OpenAI",
+        "common_name": "Truepic Lens CLI in ChatGPT",
+        "cert_serial_number": "631872854730012650133502748526736898092667640635"
+      },
+      "label": "urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85",
+      "claim_version": 2
+    },
+    "urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c": {
+      "claim_generator_info": [
+        {
+          "name": "ChatGPT",
+          "org.cai.c2pa_rs": "0.51.1"
+        }
+      ],
+      "title": "image.png",
+      "instance_id": "xmp:iid:cf3b5bb5-4d8c-4081-aa01-ee5e13683f02",
+      "assertions": [
+        {
+          "label": "c2pa.actions.v2",
+          "data": {
+            "actions": [
+              {
+                "action": "c2pa.created",
+                "softwareAgent": {
+                  "name": "GPT-4o"
+                },
+                "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+              },
+              {
+                "action": "c2pa.converted",
+                "softwareAgent": {
+                  "name": "OpenAI API"
+                }
+              }
+            ]
+          },
+          "created": true
+        }
+      ],
+      "signature_info": {
+        "alg": "Es256",
+        "issuer": "OpenAI",
+        "common_name": "Truepic Lens CLI in ChatGPT",
+        "cert_serial_number": "631872854730012650133502748526736898092667640635"
+      },
+      "label": "urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c",
+      "claim_version": 2
+    }
+  },
+  "validation_status": [
+    {
+      "code": "signingCredential.expired",
+      "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.signature",
+      "explanation": "certificate expired"
+    },
+    {
+      "code": "signingCredential.untrusted",
+      "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.signature",
+      "explanation": "signing certificate untrusted"
+    },
+    {
+      "code": "assertion.action.malformed",
+      "url": "urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85",
+      "explanation": "first action must be created or opened"
+    },
+    {
+      "code": "signingCredential.expired",
+      "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.signature",
+      "explanation": "certificate expired"
+    },
+    {
+      "code": "signingCredential.untrusted",
+      "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.signature",
+      "explanation": "signing certificate untrusted"
+    }
+  ],
+  "validation_results": {
+    "activeManifest": {
+      "success": [
+        {
+          "code": "claimSignature.insideValidity",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.signature",
+          "explanation": "claim signature valid"
+        },
+        {
+          "code": "claimSignature.validated",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.signature",
+          "explanation": "claim signature valid"
+        },
+        {
+          "code": "assertion.hashedURI.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.assertions/c2pa.thumbnail.ingredient.jpeg",
+          "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.thumbnail.ingredient.jpeg"
+        },
+        {
+          "code": "assertion.hashedURI.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.assertions/c2pa.ingredient.v3",
+          "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.ingredient.v3"
+        },
+        {
+          "code": "assertion.hashedURI.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.assertions/c2pa.hash.data",
+          "explanation": "hashed uri matched: self#jumbf=c2pa.assertions/c2pa.hash.data"
+        },
+        {
+          "code": "assertion.dataHash.match",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.assertions/c2pa.hash.data",
+          "explanation": "data hash valid"
+        }
+      ],
+      "informational": [],
+      "failure": [
+        {
+          "code": "signingCredential.expired",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.signature",
+          "explanation": "certificate expired"
+        },
+        {
+          "code": "signingCredential.untrusted",
+          "url": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.signature",
+          "explanation": "signing certificate untrusted"
+        },
+        {
+          "code": "assertion.action.malformed",
+          "url": "urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85",
+          "explanation": "first action must be created or opened"
+        }
+      ]
+    },
+    "ingredientDeltas": [
+      {
+        "ingredientAssertionURI": "self#jumbf=/c2pa/urn:c2pa:a395b916-fa19-4ee7-9856-2e41290c6f85/c2pa.assertions/c2pa.ingredient.v3",
+        "validationDeltas": {
+          "success": [
+            {
+              "code": "ingredient.manifest.validated",
+              "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c",
+              "explanation": "ingredient hash matched"
+            }
+          ],
+          "informational": [],
+          "failure": [
+            {
+              "code": "signingCredential.expired",
+              "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.signature",
+              "explanation": "certificate expired"
+            },
+            {
+              "code": "signingCredential.untrusted",
+              "url": "self#jumbf=/c2pa/urn:c2pa:8fc46701-214d-46e5-ac87-e74c449d621c/c2pa.signature",
+              "explanation": "signing certificate untrusted"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "validation_state": "Invalid"
+}

@@ -1,0 +1,118 @@
+{
+ "date": "2026-10-12",
+ "api": "https://grain-on-monad.vercel.app/api/v1/verify",
+ "copies": [
+  {
+   "platform": "whatsapp",
+   "file": "img02.jpg",
+   "bytes": 35239,
+   "size": "1254x1254",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "554",
+    "matchedBy": "both",
+    "distance": 2,
+    "onChainDistance": 2,
+    "watermark": "found",
+    "originalCredential": "OpenAI OpCo, LLC Trusted"
+   }
+  },
+  {
+   "platform": "whatsapp",
+   "file": "img01.jpg",
+   "bytes": 9243,
+   "size": "1086x362",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "553",
+    "matchedBy": "fingerprint",
+    "distance": 0,
+    "onChainDistance": 0,
+    "watermark": "none",
+    "originalCredential": "OpenAI OpCo, LLC Trusted"
+   }
+  },
+  {
+   "platform": "whatsapp",
+   "file": "img03.jpg",
+   "bytes": 46919,
+   "size": "1280x720",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "555",
+    "matchedBy": "both",
+    "distance": 2,
+    "onChainDistance": 2,
+    "watermark": "found",
+    "originalCredential": "OpenAI OpCo, LLC Trusted"
+   }
+  },
+  {
+   "platform": "whatsapp",
+   "file": "img04.jpg",
+   "bytes": 118937,
+   "size": "1280x853",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "556",
+    "matchedBy": "both",
+    "distance": 2,
+    "onChainDistance": 2,
+    "watermark": "found",
+    "originalCredential": "OpenAI OpCo, LLC Trusted"
+   }
+  },
+  {
+   "platform": "whatsapp",
+   "file": "img05.jpg",
+   "bytes": 58083,
+   "size": "1024x1024",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "557",
+    "matchedBy": "both",
+    "distance": 0,
+    "onChainDistance": 0,
+    "watermark": "found",
+    "originalCredential": "OpenAI Invalid"
+   }
+  },
+  {
+   "platform": "whatsapp",
+   "file": "img06.jpg",
+   "bytes": 167318,
+   "size": "853x1280",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "558",
+    "matchedBy": "both",
+    "distance": 0,
+    "onChainDistance": 0,
+    "watermark": "found",
+    "originalCredential": "OpenAI OpCo, LLC Trusted"
+   }
+  },
+  {
+   "platform": "whatsapp",
+   "file": "img07.jpg",
+   "bytes": 37081,
+   "size": "1086x362",
+   "c2patool": "none",
+   "grain": {
+    "state": "RESOLVED",
+    "record": "559",
+    "matchedBy": "fingerprint",
+    "distance": 0,
+    "onChainDistance": 0,
+    "watermark": "none",
+    "originalCredential": "OpenAI OpCo, LLC Trusted"
+   }
+  }
+ ]
+}

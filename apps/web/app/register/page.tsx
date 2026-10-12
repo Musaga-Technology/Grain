@@ -53,6 +53,14 @@ interface Item { file: File; preview: string; wideRatio: boolean }
  * so a quick click on Register can't skip it.
  */
 const credentials = new WeakMap<File, Promise<SourceCredentialAssertion | null>>();
+
+/** "trusted", or for a batch with mixed results "6 trusted, 1 not valid". */
+function validationSummary(creds: SourceCredentialAssertion[]): string {
+  const n = { trusted: 0, valid: 0, 'not valid': 0 };
+  for (const c of creds) n[c.validation === 'Trusted' ? 'trusted' : c.validation === 'Valid' ? 'valid' : 'not valid']++;
+  const parts = Object.entries(n).filter(([, k]) => k > 0);
+  return parts.length === 1 ? parts[0][0] : parts.map(([w, k]) => `${k} ${w}`).join(', ');
+}
 const credentialOf = (f: File) => {
   if (!credentials.has(f)) credentials.set(f, readSourceCredential(f).catch(() => null));
   return credentials.get(f)!;
@@ -470,7 +478,7 @@ export default function Register() {
                     <span style={{ color: 'var(--brand)' }}>&#10003;</span>{' '}
                     {found.creds.length === 1 ? 'Content Credentials found' : `Content Credentials found on ${found.creds.length} images`}: signed by{' '}
                     {[...new Set(found.creds.map(credentialName))].join(', ')}
-                    {found.creds[0].tool ? ` (${found.creds[0].tool})` : ''} &middot; {found.creds.every((c) => c.validation === 'Trusted') ? 'trusted' : found.creds.every((c) => c.validation !== 'Invalid') ? 'valid' : 'not valid'}
+                    {found.creds[0].tool ? ` (${found.creds[0].tool})` : ''} &middot; {validationSummary(found.creds)}
                   </p>
                   <p className="mt-1" style={{ color: 'var(--ink-muted)' }}>
                     Platforms strip these from every copy. Grain keeps a record of them, so even a screenshot leads back to the original credential.
