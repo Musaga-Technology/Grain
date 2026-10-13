@@ -14,8 +14,8 @@
 |---|---|---|
 | **Track 04: Trust, Identity & AI** | an open C2PA manifest repository on Monad: [how it works](#how-it-works), recovering real C2PA credentials after platforms strip them ([measured](docs/SURVIVAL.md)), [AI-generated and by whom](#how-it-works) (ERC-8004), [measured](#measured-not-asserted) | [catch a forgery](https://grain-on-monad.vercel.app/verify?sample=forged) |
 | **Monad** | [Why Monad](#why-monad): on-chain search and proof, ~93k gas per image, 0.53 s to confirm, parallel execution [burst-tested](docs/PARALLEL.md) | [record 535](https://grain-on-monad.vercel.app/r/535) |
-| **MetaMask Agent Wallet** | [the plugin](#for-agents-the-metamask-agent-wallet-plugin): verify, license, pay, and agents registering their own work under ERC-8004; [two MetaMask bugs we traced](#things-we-found-and-fixed-or-stated) | [npm](https://www.npmjs.com/package/mm-plugin-grain), [a licence approved by email](https://testnet.monadscan.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17) |
-| **Mera: One Passkey, Many Keys** | [Accounts on Mera](#accounts-on-mera-one-passkey-many-keys): one prompt gives an identity, unlinkable pen names and a private-notes key | [/me](https://grain-on-monad.vercel.app/me), [/register](https://grain-on-monad.vercel.app/register) |
+| **AI assistants and agents** | the [MCP server](#for-ai-assistants-the-grain-mcp-server) (Claude, ChatGPT, Cursor: one URL), a [one-call API](#for-agents-one-http-call), and the [MetaMask Agent Wallet plugin](#for-agents-the-metamask-agent-wallet-plugin): verify, license with the owner's approval, register an agent's own work under ERC-8004 | [npm](https://www.npmjs.com/package/mm-plugin-grain), [a licence approved by email](https://testnet.monadscan.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17) |
+| **Mera: One Passkey, Many Keys** | [Accounts on Mera](#accounts-on-mera-one-passkey-many-keys): one prompt gives an identity, unlinkable pen names, a private-notes key, and a pen-link key that proves one pen name is yours, on demand | [/me](https://grain-on-monad.vercel.app/me), [/register](https://grain-on-monad.vercel.app/register) |
 | **Envio** | [How Envio powers Grain](#how-envio-powers-grain): creator portfolios, earnings and the live feed that the contracts can't list, every answer checked against the chain | [/c/grain-studio](https://grain-on-monad.vercel.app/c/grain-studio), [/sealed](https://grain-on-monad.vercel.app/sealed) |
 
 ## Contents
@@ -61,7 +61,7 @@ The spec defines the lookup. It does not say who runs the repository. Today that
 
 **Grain is that repository: open, permissionless, on Monad.** Nobody can delete your record, anyone can check an answer against it, and it works for people who have never touched crypto — one passkey prompt, no wallet, no seed phrase.
 
-It is **not NFTs.** Records are found *by the content itself*, ten thousand copies of an image resolve to one record, and nothing is minted or traded. There is no ERC-721 anywhere in the project.
+It is **not NFTs.** Records are found *by the content itself*, ten thousand copies of an image resolve to one record, and nothing is minted or traded: Grain's contracts have no ERC-721. (An AI agent's ERC-8004 identity is a token in the standard ERC-8004 registry, not in Grain.)
 
 ---
 
@@ -285,7 +285,7 @@ JPEG 20 defeats the watermark but not the fingerprint; a 10% crop defeats the fi
 
 | | |
 |---|---|
-| Records on chain | **530+**: 500 from a public photo corpus, labelled `@seed-corpus`; the rest registered through the app |
+| Records on chain | **559**: 500 from a public photo corpus, labelled `@seed-corpus`; the rest registered through the app |
 | LSH recall, 1,000 records, ≤7 bits flipped | **100%** — the pigeonhole guarantee behind the 8 × 8 band geometry |
 | Verify, end to end in the browser | **~2 s** |
 | First answer on a cold first visit | **5.8 s** — the fingerprint answers while the watermark model downloads |
@@ -298,13 +298,14 @@ Gas figures in [docs/GAS.md](docs/GAS.md).
 ## Things we found, and fixed or stated
 
 - **Adobe's TrustMark implementations disagree.** Grain's watermarks have to be readable by any TrustMark decoder, so we checked against all three Adobe ships. For the BCH_SUPER error-correction scheme, Adobe's Python reference and JavaScript library produce identical parity, but the Rust crate does not: it pads 40 data bits to 6 bytes where Python uses 5, and its leftover-byte loop drops Python's `pidx += 1`. So BCH_SUPER marks don't read across implementations. Grain ships **BCH_5**, which they all agree on: our browser encoder's codewords are bit-identical to Adobe's Python reference, and the Rust CLI reads them.
-- **The tamper threshold in our own spec was wrong.** At the planned value of 12, a third of legitimate 10% crops were flagged as stolen credentials. Measured against 210 unrelated image pairs, **16** catches every genuine transfer while nearly eliminating false alarms.
+- **Our planned tamper threshold was wrong.** At the planned value of 12, a third of legitimate 10% crops were flagged as stolen credentials. Measured against 210 unrelated image pairs, **16** catches every genuine transfer while nearly eliminating false alarms.
 - **MetaMask's Agent Wallet lists Monad testnet but can't send on it out of the box.** `mm chains list` includes Monad Testnet (10143), yet two MetaMask services behind the wallet answer `Invalid chainId` (HTTP 400) for it: the gas-fee estimate API, and the Infura proxy `mm` uses as the chain's RPC, so the block tracker never starts. Every testnet transaction fails before it's sent. We traced both in `mm`'s code and worked around them with its own mechanisms: the plugin supplies `gas` and fee caps read from Monad's RPC (`mm` skips its fee API when they're present), and adds one `customEvmChains` entry pointing chain 10143 at `https://testnet-rpc.monad.xyz` (`mm` checks custom chains before its proxy). The first licence through MetaMask's server wallet went through on that path: [`0xc9e76b7b…6b17`](https://testnet.monadscan.com/tx/0xc9e76b7b9017170d695c581c26c45036c8a95dc6dc66dedb86b7424501ec6b17). Details in [plugins/mm-grain](plugins/mm-grain#monad-testnet-and-metamasks-wallet).
+- **A watermark can move a fingerprint.** On some low-texture images, adding Grain's watermark shifts the image's own fingerprint -- by 28 bits on a C2PA test image, against 0–2 bits on seven ChatGPT images. The marked copy always matches its record; an unmarked original may not. So the copy to publish is the one Grain returns, and indexing the original's fingerprint too is planned. More in the [threat model](docs/THREAT_MODEL.md).
 - **The onchain index has a ceiling.** Over 913 real photos, the busiest LSH bucket held ~5× the average. Projected to a million records, reading it costs ~11.5 M gas in one call — inside a 150 M block limit, but within an order of magnitude. The production path is search off chain through the indexer, then prove the winner on chain with `verify()`.
 
 ## Honest about conformance
 
-Grain is **C2PA-compatible, not C2PA-certified.** It implements the soft-binding assertion structure and the Soft Binding Resolution API shape; it does not run the `c2pa-rs` signing stack with certificates from the C2PA trust list. Our fingerprint algorithm, `grain.phash.v1`, is ours and not on the C2PA approved list — manifests say so with `algId: 0`. TrustMark Q is on it, as `algId: 4`.
+Grain is **C2PA-compatible, not C2PA-certified.** It follows C2PA's soft-binding model -- a watermark and a fingerprint that point to a manifest in a repository -- and it reads and validates real C2PA manifests (Adobe's c2pa-web, against the official C2PA trust list) when an image carrying one is registered. It does not sign C2PA manifests itself, since that needs a certificate on the C2PA trust list, and it does not yet expose C2PA's Soft Binding Resolution API endpoints; lookups go through Grain's own API and MCP server. Our fingerprint algorithm, `grain.phash.v1`, is ours and not on the C2PA approved list — manifests say so with `algId: 0`. TrustMark Q is on it, as `algId: 4`.
 
 **Register before you publish.** Grain can't stop someone registering a picture they didn't make; no registry can check authorship at upload time. If two accounts register the same picture, Grain credits the earliest, because the chain's timestamp is the only neutral referee. So the rule for creators is simple: register before you post. A copier can only copy what's already public, so a creator who registers first always wins, and a copier who registers later leaves a permanent, timestamped claim against themselves.
 
