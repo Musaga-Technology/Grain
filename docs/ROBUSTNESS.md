@@ -236,6 +236,22 @@ percentile 22, median 32.
 16 is where false accusations nearly vanish and no genuine transfer escapes.
 Re-derive if the fingerprint changes.
 
+## False matches between different images
+
+How often two *different* pictures land within Grain's thresholds
+([`scripts/false-matches.ts`](../scripts/false-matches.ts), 14 Oct 2026):
+
+| Population | Pairs | ≤ 7 bits (credited) | 8–16 (UNCERTAIN) | Median |
+|---|---|---|---|---|
+| Real photos, the 913-image corpus | 416,327 | **0** | 155 (0.04%) | 32 |
+| Procedural art, different scenes | 4,000 | 0 | 13 | -- |
+| Procedural art, same scene, different seed | 950 | **255** | 436 | -- |
+
+Real photographs are well separated. Smooth images that share a layout are
+not: for the night scene, 147 of 190 seed pairs fall within 7 bits, and they
+do look nearly alike. A DCT hash measures low-frequency structure, which is
+all such images have. (The corpus held one photo twice; that pair is excluded.)
+
 ## Aspect-ratio caveat
 
 TrustMark generates residuals at 256x256 and scales them into the image, and
