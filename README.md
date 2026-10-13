@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Musaga-Technology/Grain/actions/workflows/ci.yml/badge.svg)](https://github.com/Musaga-Technology/Grain/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/mm-plugin-grain?label=mm-plugin-grain)](https://www.npmjs.com/package/mm-plugin-grain) ![contracts verified](https://img.shields.io/badge/contracts-verified%20on%20Sourcify-1f5f4f)
 
-> **Demo video:** _link goes here_
+> **[Watch the demo (3 min)](https://youtu.be/QpwtmKSkHR0)** · **[Watch the pitch (2 min)](https://youtu.be/Yz902VvcMUw)**
 
 ## For judges
 
