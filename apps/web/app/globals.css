@@ -25,6 +25,12 @@
   --brand-hover: #17493c;
   --brand-soft: #eef5f2;
 
+  /* Badges: AI-generated (violet) and an original C2PA credential (blue). */
+  --ai-surface: #f1ecfb;
+  --ai-ink: #5b3fa0;
+  --c2pa-surface: #eaf1fb;
+  --c2pa-ink: #1f4f8a;
+
   --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
 }
@@ -44,6 +50,10 @@
     --brand: #6fd8b6;
     --brand-hover: #8ee5c8;
     --brand-soft: #14231f;
+    --ai-surface: #221b33;
+    --ai-ink: #c4b1f6;
+    --c2pa-surface: #15202e;
+    --c2pa-ink: #9dc3f2;
   }
 }
 
